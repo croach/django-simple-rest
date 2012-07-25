@@ -7,8 +7,8 @@ from django.http import HttpResponseForbidden
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.sessions.backends.db import SessionStore
 
-# TODO: Remove the dependency on FPUser
-from plum.console.models import FPUser, Site
+# TODO: Remove the dependency on Site
+from plum.console.models import Site
 
 from .auth.signature import calculate_signature
 
@@ -60,43 +60,17 @@ class View(DjangoView):
                 if not self._validate_signature(request, kwargs.get('domain', None)):
                     return HttpResponseForbidden()
             else:
-                if not request.GET.get('session_id', False):
-                    handler = login_required(handler)
-                elif not self._validate_session(request, kwargs.get('domain', None)):
-                    return HttpResponseForbidden()
-        elif getattr(handler, 'login_required', False):
-            if not request.GET.get('session_id', False):
                 handler = login_required(handler)
-            elif not self._validate_session(request, kwargs.get('domain', None)):
-                return HttpResponseForbidden()
+        elif getattr(handler, 'login_required', False):
+            handler = login_required(handler)
         elif getattr(handler, 'admin_required', False):
-            if not request.GET.get('session_id', False):
-                handler = user_passes_test(lambda u: u.is_superuser)(handler)
-            elif not self._validate_session(request, require_admin=True):
-                return HttpResponseForbidden()
+            handler = user_passes_test(lambda u: u.is_superuser)(handler)
         elif getattr(handler, 'signature_required', False):
             if not self._validate_signature(request, kwargs.get('domain', None)):
                 return HttpResponseForbidden()
 
         return handler(request, *args, **kwargs)
 
-    def _validate_session(self, request, domain=None, require_admin=False):
-        session_key = request.GET.get('session_id', None)
-        if session_key:
-            session = SessionStore(session_key).load()
-            if '_auth_user_id' in session:
-                try:
-                    user = FPUser.objects.get(id=session['_auth_user_id'])
-                    if user.is_superuser:
-                        return True
-                    elif require_admin:
-                        return False
-                    elif domain:
-                        account = Site.objects.get(domain=domain).account
-                        return account == user.account
-                except:
-                    pass
-        return False
 
     def _validate_signature(self, request, domain):
         """
