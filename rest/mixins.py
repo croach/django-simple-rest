@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.sessions.backends.db import SessionStore
 from django.http import QueryDict
 
+# TODO: Remove the dependency on FPUser
 from plum.console.models import FPUser, Site
 from . import calculate_signature
 
