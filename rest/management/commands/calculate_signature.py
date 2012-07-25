@@ -3,7 +3,7 @@ import datetime
 import time
 
 from django.core.management.base import BaseCommand
-from rest import calculate_signature
+from ... import calculate_signature
 
 
 class Command(BaseCommand):
