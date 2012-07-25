@@ -3,7 +3,7 @@ import datetime
 import time
 
 from django.core.management.base import BaseCommand
-from ... import calculate_signature
+from ...auth.signature import calculate_signature
 
 
 class Command(BaseCommand):
@@ -48,4 +48,3 @@ are returned as a URL encoded string."""
             print urllib.urlencode(data)
         else:
             print 't=%d sig=%s' % (timestamp, signature)
-

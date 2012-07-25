@@ -1,90 +1,137 @@
 import inspect
-from functools import WRAPPER_ASSIGNMENTS, update_wrapper
+from datetime import datetime
+from functools import wraps
+
+from django.utils.decorators import method_decorator, available_attrs
+
+from .signature import calculate_signature
+from ..exceptions import HttpError
 
 
-def auth_required(wrapped_obj):
+def auth_required(secret_key_func):
     """
     Requires that the user be authenticated either by a signature or by
     being actively logged in.
     """
-    return _auth_wrapper(wrapped_obj)
+    def actual_decorator(obj):
+
+        def test_func(request, *args, **kwargs):
+            secret_key = secret_key_func(request, *args, **kwargs)
+            return validate_signature(request, secret_key) or request.user.is_authenticated()
+
+        decorator = request_passes_test(test_func)
+        return wrap_object(obj, decorator)
+
+    return actual_decorator
 
 
-def login_required(wrapped_obj):  # TODO: Add the redirect_field_name and login_url fields
+def login_required(obj):  # TODO: Add the redirect_field_name and login_url fields
     """
     Requires that the user be logged in order to gain access to the resource
     at the specified the URI.
     """
-    return _auth_wrapper(wrapped_obj, 'login')
+    decorator = request_passes_test(lambda r, *args, **kwargs: r.user.is_authenticated())
+    return wrap_object(obj, decorator)
 
 
-def admin_required(wrapped_obj):
+def admin_required(obj):
     """
     Requires that the user be logged AND be set as a superuser
     """
-    return _auth_wrapper(wrapped_obj, 'admin')
+    decorator = request_passes_test(lambda r, *args, **kwargs: r.user.is_superuser)
+    return wrap_object(obj, decorator)
 
 
-def signature_required(wrapped_obj):
+def signature_required(secret_key_func):
     """
     Requires that the request contain a valid signature to gain access
     to a specified resource.
     """
-    return _auth_wrapper(wrapped_obj, 'signature')
+    def actual_decorator(obj):
+
+        def test_func(request, *args, **kwargs):
+            secret_key = secret_key_func(request, *args, **kwargs)
+            return validate_signature(request, secret_key)
+
+        decorator = request_passes_test(test_func)
+        return wrap_object(obj, decorator)
+
+    return actual_decorator
 
 
-def _auth_wrapper(wrapped_obj, auth_type=None):  # TODO: Add the redirect_field_name and login_url fields
+def request_passes_test(test_func):
     """
-    Returns a function (or class object) that requires that the user be
-    authenticated according to the auth_type parameter to gain access
-    to the function (or methods) within. The default authentication type
-    is a cascading auth. If a signature is found, it will be used to
-    authenticate the user's request, otherwise, the request will be allowed
-    if a valid session exists.
+    Decorator for resources that checks that the request passes the given test.
+    If the request fails the test a 401 (Unauthorized) response is returned,
+    otherwise the view is executed normally. The test should be a callable that
+    takes an HttpRequest object and any number of positional and keyword
+    arguments as defined by the urlconf entry for the decorated resource.
     """
-    if inspect.isfunction(wrapped_obj):
-        decorator = _auth_required_function_decorator(auth_type)
-    elif inspect.isclass(wrapped_obj):
-        decorator = _auth_required_class_decorator(auth_type)
+    def decorator(view_func):
+        @wraps(view_func, assigned=available_attrs(view_func))
+        def _wrapped_view(request, *args, **kwargs):
+            if test_func(request, *args, **kwargs):
+                return view_func(request, *args, **kwargs)
+            raise HttpError(status=401)
+        return _wrapped_view
+    return decorator
+
+
+def wrap_object(obj, decorator):
+    """
+    Decorates the given object with the decorator function.
+
+    If obj is a method, the method is decorated with the decorator function
+    and returned. If obj is a class (i.e., a class based view), the methods
+    in the class corresponding to HTTP methods will be decorated and the
+    resultant class object will be returned.
+    """
+    actual_decorator = method_decorator(decorator)
+
+    if inspect.isfunction(obj):
+        wrapped_obj = actual_decorator(obj)
+    elif inspect.isclass(obj):
+        for method_name in obj.http_method_names:
+            if hasattr(obj, method_name):
+                method = getattr(obj, method_name)
+                setattr(obj, method_name, actual_decorator(method))
+        wrapped_obj = obj
     else:
-        raise TypeError("received an object of type '{0}' expected 'function' or 'classobj'.".format(type(wrapped_obj)))
-    return decorator(wrapped_obj)
+        raise TypeError("received an object of type '{0}' expected 'function' or 'classobj'.".format(type(obj)))
+
+    return wrapped_obj
 
 
-def _auth_required_class_decorator(auth_type=None):
-    func_decorator = _auth_required_function_decorator(auth_type)
+def validate_signature(request, secret_key):
+    """
+    Validates the signature associated with the given request.
+    """
 
-    def decorator(cls):
-        for method in cls.http_method_names:
-            if hasattr(cls, method):
-                func = getattr(cls, method)
-                setattr(cls, method, func_decorator(func))
-        return cls
+    # Extract the request parameters according to the HTTP method
+    data = request.GET.copy()
+    if request.method.lower() == 'post':
+        data.update(request.POST.copy())
+    elif request.method.lower() == 'put':
+        data.update(request.PUT.copy())
 
-    return decorator
+    # Make sure the request contains a signature
+    if data.get('sig', False):
+        sig = data['sig']
+        del data['sig']
+    else:
+        return False
 
+    # Make sure the request contains a timestamp
+    if data.get('t', False):
+        timestamp = int(data.get('t', False))
+        del data['t']
+    else:
+        return False
 
-def _auth_required_function_decorator(auth_type=None):
-    # Decorators really should be side effect free and not
-    # manipulate the function they wrap, so we create a
-    # new function and add the login_required flag to it.
-    def decorator(func):
-        def wrapped_view(*args, **kwargs):
-            return func(*args, **kwargs)
+    # Make sure the signature has not expired
+    delta = datetime.utcnow() - datetime.utcfromtimestamp(timestamp)
+    if delta.seconds > 5 * 60:  # If the signature is older than 5 minutes, it's invalid
+        return False
 
-        # Set the authentication type flag on the wrapped_view
-        if not auth_type:
-            wrapped_view.auth_required = True
-        elif auth_type == 'login':
-            wrapped_view.login_required = True
-        elif auth_type == 'signature':
-            wrapped_view.signature_required = True
-        elif auth_type == 'admin':
-            wrapped_view.admin_required = True
-        else:
-            raise ValueError("Invalid auth_type. Expected 'login' or 'signature' found {0}.".format(auth_type))
-
-        # Update the wrapped_view to have the same signature, docs, etc as the view it wraps
-        assigned_attrs = set(WRAPPER_ASSIGNMENTS) & set(dir(wrapped_view))
-        return update_wrapper(wrapped_view, func, assigned=assigned_attrs)
-    return decorator
+    # Make sure the signature is valid
+    return sig == calculate_signature(secret_key, data, timestamp)

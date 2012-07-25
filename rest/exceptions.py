@@ -2,7 +2,7 @@ from django.http import HttpResponse
 
 
 class HttpError(Exception):
-    def __init__(self, message='Server Error', status=500):
+    def __init__(self, message=None, status=500):
         super(HttpError, self).__init__(message)
         self.status = status
 
@@ -17,7 +17,7 @@ class ExceptionMiddleware(object):
         """
         response = None
         if isinstance(exception, HttpError):
-            response = HttpResponse(
-                content=exception.message,
-                status=exception.status)
+            response = HttpResponse(status=exception.status)
+            if exception.message:
+                response.content = exception.message
         return response
