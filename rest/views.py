@@ -30,8 +30,8 @@ class View(DjangoView):
 
         if (method_in_GET or method_in_POST) == 'put':
             #Manually switch POST data to PUT
-            request.PUT = POST
-            request.POST = QueryDict({})
+            request.PUT = request.POST # fixed POST -> request.POST -- nick
+            #request.POST = QueryDict({}) # don't overwrite this yet. looks like some people still depend on request.POST for PUT requests --nick
 
         # Try to dispatch to the right method; if a method doesn't exist,
         # defer to the error handler. Also defer to the error handler if the
