@@ -9,5 +9,5 @@ setup(
     long_description=open('README.rst').read(),
     packages=find_packages(),
     zip_safe=False,
-    install_requires=['distribute', 'Django>=1.2']
+    install_requires=['distribute']
 )
