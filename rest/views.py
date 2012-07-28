@@ -9,7 +9,6 @@ class View(DjangoView):
     def dispatch(self, request, *args, **kwargs):
         # If the HTTP method is PUT, add PUT attribute to the request,
         # and point it at the POST QueryDict
-        import ipdb; ipdb.set_trace()
         if request.method.lower() == 'put':
             request.method = 'POST'
             request._load_post_and_files()
