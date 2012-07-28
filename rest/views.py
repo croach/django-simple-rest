@@ -7,31 +7,27 @@ class View(DjangoView):
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
-        # TODO: Move to a wrapper method, decorator, something
-
+        # If the HTTP method is PUT, add PUT attribute to the request,
+        # and point it at the POST QueryDict
+        import ipdb; ipdb.set_trace()
         if request.method.lower() == 'put':
             request.method = 'POST'
             request._load_post_and_files()
             request.method = 'PUT'
             request.PUT = request.POST
 
-        method_in_GET = request.GET.get('_method', '').lower()
-        method_in_POST = request.POST.get('_method', '').lower()
-
-        #Ok, now let's remove that method.
-        if request.GET and method_in_GET:
+        # Check for an overriding method in the GET or POST data,
+        # and set the HTTP method on the request appropriately
+        if request.GET and request.GET.get('_method', None):
             GET = request.GET.copy()
-            request.method = GET.pop('_method')[0]
+            request.method = GET.pop('_method')[0].upper()
             request.GET = GET
-        elif request.POST and method_in_POST:
+            request.PUT = request.GET
+        elif request.POST and request.POST.get('_method', None):
             POST = request.POST.copy()
-            request.method = POST.pop('_method')[0]
+            request.method = POST.pop('_method')[0].upper()
             request.POST = POST
-
-        if (method_in_GET or method_in_POST) == 'put':
-            #Manually switch POST data to PUT
-            request.PUT = request.POST # fixed POST -> request.POST -- nick
-            #request.POST = QueryDict({}) # don't overwrite this yet. looks like some people still depend on request.POST for PUT requests --nick
+            request.PUT = request.POST
 
         # Try to dispatch to the right method; if a method doesn't exist,
         # defer to the error handler. Also defer to the error handler if the
@@ -40,5 +36,8 @@ class View(DjangoView):
             handler = getattr(self, request.method.lower(), self.http_method_not_allowed)
         else:
             handler = self.http_method_not_allowed
+
+        # Have to set request on the View object to make http_method_not_allowed happy
+        self.request = request
 
         return handler(request, *args, **kwargs)
