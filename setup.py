@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='rest',
-    version='0.2',
+    version='0.2.1',
     author='Christopher Roach',
     author_email='croach@freshplum.com',
     description='A bare bones simple package for creating RESTful APIs on top of Django',
