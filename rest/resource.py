@@ -11,6 +11,8 @@ class Resource(View):
             request.method = 'POST'
             request._load_post_and_files()
             request.method = 'PUT'
+        else:
+            request._load_post_and_files()
 
         # Check for an overriding method in the GET or POST data,
         # and set the HTTP method on the request appropriately
