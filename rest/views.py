@@ -1,9 +1,8 @@
-from django.views.generic import View as DjangoView
-from django.http import QueryDict
+from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 
 
-class View(DjangoView):
+class Resource(View):
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
