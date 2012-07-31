@@ -37,7 +37,7 @@ There's nothing to it, it works just like you'd expect it to---assuming you're f
 
     from django.http import HttpResponse
 
-    from rest.views import Resource
+    from rest import Resource
     from rest.exceptions import HttpError
 
 
@@ -100,7 +100,7 @@ In the ``rest.auth.decorators`` module you'll find decorators there that you can
 
     from django.http import HttpResponse
 
-    from rest.views import Resource
+    from rest import Resource
     from rest.exceptions import HttpError
     from rest.auth.decorators import login_required, admin_required
 
@@ -146,7 +146,7 @@ Now, this can get a bit tedious if we have lots of resources and they all tend t
 
     from django.http import HttpResponse
 
-    from rest.views import Resource
+    from rest import Resource
     from rest.exceptions import HttpError
     from rest.auth.decorators import admin_required
 
@@ -191,7 +191,7 @@ The other item I want to mention is the ``signature_required`` authentication de
 
     from django.http import HttpResponse
 
-    from rest.views import Resource
+    from rest import Resource
     from rest.exceptions import HttpError
     from rest.auth.decorators import signature_required
 
