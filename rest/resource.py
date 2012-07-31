@@ -6,7 +6,6 @@ class Resource(View):
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
-        import ipdb; ipdb.set_trace()
         # If the HTTP method is PUT, load the POST data
         if request.method.lower() == 'put':
             request.method = 'POST'
