@@ -1,8 +1,9 @@
+from django.forms import ModelForm as DjangoModelForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.fields import NOT_PROVIDED
 
 
-class RESTfulModelFormMixin(object):
+class ModelForm(DjangoModelForm):
     """
     Allows a model form to validate properly with default attributes missing.
 
@@ -13,29 +14,13 @@ class RESTfulModelFormMixin(object):
     an issue. However, with RESTful requests, we cannot assume that all
     attributes will be present in the request.
 
-    This mixin provides a method that will allow the form to validate even if
-    some (optional) attributes are not present in the original request. It
-    does so by adding the default values (from the model) to the data from the
-    request for each missing attribute. It must add these elements to the data
-    object, as opposed to just passing it to the form's __init__ method as the
-    'initial' parameter since 'initial' is only used to render the HTML form
-    and not for the validation of the data.
-
-    To use this mixin, create a form class that inherits from both the
-    ModelForm class and from this class as well. Then, in the __init__ method
-    call self.set_defaults() (after the call to super.__init__) to populate
-    the form's initial dataset with the model's default values.
-
-    e.g.,
-
-    class MyForm(ModelForm, RESTFulModelFormMixin):
-        class Meta:
-            model = MyModel
-
-        def __init__(self, *args, **kwargs):
-            super(MyForm, self).__init__(*args, **kwargs)
-            self.set_defaults()
-
+    This class allows the form to validate even if some (optional) attributes
+    are not present in the original request. It does so by adding the default
+    values (from the model) to the data from the request for each missing
+    attribute. It must add these elements to the data object, as opposed to
+    just passing it to the form's __init__ method as the 'initial' parameter
+    since 'initial' is only used to render the HTML form and not for the
+    validation of the data.
 
     UPDATE:
     This mixin has been updated to also populate form with values from an
@@ -44,7 +29,8 @@ class RESTfulModelFormMixin(object):
     many-to-many relationships.
     """
 
-    def set_defaults(self):
+    def __init__(self, *args, **kwargs):
+        super(ModelForm, self).__init__(*args, **kwargs)
         for field in self.instance.__class__._meta.fields:
             if field.name not in self.data.keys() or self.data.get(field.name) == None:
                 inst_val = None
@@ -60,3 +46,4 @@ class RESTfulModelFormMixin(object):
                     self.data[field.name] = inst_val
                 elif field.default != NOT_PROVIDED:
                     self.data[field.name] = field.default
+
