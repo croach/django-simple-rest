@@ -1,3 +1,6 @@
+import distribute_setup
+distribute_setup.use_setuptools()
+
 from setuptools import setup, find_packages
 
 __version__ = '0.3.0'
@@ -14,5 +17,4 @@ setup(
     long_description=open('README.rst').read(),
     packages=find_packages(),
     zip_safe=False,
-    install_requires=['distribute']
 )
