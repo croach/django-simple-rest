@@ -8,10 +8,16 @@ Django Simple REST is a very light framework that provides only the bare bones b
 Installation
 ############
 
-1. Install using pip or easy_install: ``pip install rest`` or ``easy_install install rest``
-2. Add the ExceptionMiddleware to the list of middleware classes (optional): ``MIDDLEWARE_CLASSES += ['rest.exceptions.ExceptionMiddleware']``
+1. Install using pip or easy_install: 
+
+   - ``pip install rest`` or ``easy_install install rest``
+2. Add the ExceptionMiddleware to the list of middleware classes (optional):
+
+   - ``MIDDLEWARE_CLASSES += ['rest.exceptions.ExceptionMiddleware']``
    - This step is optional and is only needed if you want to be able to raise an HttpError from a view.
-3. Add the package to the list of installed apps (optional): INSTALLED_APPS += ['rest']
+3. Add the package to the list of installed apps (optional): 
+   
+   - ``INSTALLED_APPS += ['rest']``
    - This step is optional and is only needed if you plan on using the supplied custom django command(s).
 
 ###########################
