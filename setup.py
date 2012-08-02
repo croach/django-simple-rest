@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 __version__ = '0.3.0'
 __author__ = 'Christopher Roach'
 __email__ = 'croach@freshplum.com'
-__license__ = ''
+__license__ = 'MIT'
 
 setup(
     name='rest',
