@@ -1,10 +1,15 @@
 from setuptools import setup, find_packages
 
+__version__ = '0.3.0'
+__author__ = 'Christopher Roach'
+__email__ = 'croach@freshplum.com'
+__license__ = ''
+
 setup(
     name='rest',
-    version='0.3.0',
-    author='Christopher Roach',
-    author_email='croach@freshplum.com',
+    version=__version__,
+    author=__author__,
+    author_email=__email__,
     description='A bare bones simple package for creating RESTful APIs on top of Django',
     long_description=open('README.rst').read(),
     packages=find_packages(),
