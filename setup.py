@@ -15,6 +15,21 @@ setup(
     author_email=__email__,
     description='A drop dead simple package for creating RESTful APIs on top of Django',
     long_description=open('README.rst').read(),
+    url='https://github.com/freshplum/django-simple-rest',
     packages=find_packages(),
     zip_safe=False,
+    keywords='rest,django',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Environment :: Web Environment',
+        'Framework :: Django',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Internet :: WWW/HTTP',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Software Development :: Libraries :: Python Modules'
+    ]
 )
