@@ -8,15 +8,15 @@ Django Simple REST is a very light framework that provides only the bare bones b
 Installation
 ############
 
-1. Install using pip or easy_install: 
+1. Install using pip or easy_install:
 
    - ``pip install rest`` or ``easy_install install rest``
 2. Add the ExceptionMiddleware to the list of middleware classes (optional):
 
    - ``MIDDLEWARE_CLASSES += ['rest.exceptions.ExceptionMiddleware']``
    - This step is optional and is only needed if you want to be able to raise an HttpError from a view.
-3. Add the package to the list of installed apps (optional): 
-   
+3. Add the package to the list of installed apps (optional):
+
    - ``INSTALLED_APPS += ['rest']``
    - This step is optional and is only needed if you plan on using the supplied custom django command(s).
 
@@ -241,8 +241,6 @@ There's also another decorator called ``auth_required`` that works in the same m
 Finally, if you're using the ``signature_required`` or ``auth_required`` decorator in your code and need a little extra help debugging your resources, specifically you need help generating a secure signature, Simple REST provides a custom command called ``urlencode`` that takes a set of data as key/value pairs and an optional secret key and returns a URL encoded string that you can copy and paste directly into a cURL command or other helpful tool such as the `REST Console`_ for Chrome. An example of how to use the ``urlencode`` command is listed below::
 
     % python manage.py urlencode --secret-key=test foo=1 bar=2 baz=3 name='Maxwell Hammer'
-    bar=2&name=Maxwell+Hammer&baz=3&sig=623251d0a98d5eb5a284ff0d2683a5e6cd3b03545fc02ac6bd0bcfb4259f5779&t=1343939956&foo=1
-
 
 ###############
 Form Validation
