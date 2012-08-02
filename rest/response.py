@@ -32,6 +32,25 @@ SUPPORTED_MIMETYPES = {
 
 
 class RESTfulResponse(object):
+    """
+    Can be used as a decorator or an instance to properly formatted content
+
+    This class provides content negotiation for RESTful requests. The content-
+    type of a response is determined by the ACCEPT header of the reqeust or by
+    an overriding file extension in the URL (e.g., path/to/some/resource.xml)
+    will return the response formatted as XML.
+
+    This class creates an instance that can be used directly to transform a
+    python dict into a properly formatted response via the render_to_response
+    method or it can be used as a decorator for class-based views or for an
+    individual method within a class-based view. If a requested mimetype is
+    not found amongst the supported mimetypes, the content-type of the response
+    will default to 'application/json'.
+
+    This class is inspired by an excellent blog post from James Bennett. See
+    http://www.b-list.org/weblog/2008/nov/29/multiresponse/ for more
+    information.
+    """
     def __init__(self, mimetype_mapping=None):
         self.supported_mimetypes = SUPPORTED_MIMETYPES.copy()
         if mimetype_mapping:
