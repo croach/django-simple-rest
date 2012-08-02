@@ -1,14 +1,18 @@
+##################
+Django Simple REST
+##################
+
+Django Simple REST is a very light framework that provides only the bare bones basics of what is needed to create RESTful APIs on top of Django.
+
 ############
 Installation
 ############
 
 1. Install using pip or easy_install: ``pip install rest`` or ``easy_install install rest``
 2. Add the ExceptionMiddleware to the list of middleware classes (optional): ``MIDDLEWARE_CLASSES += ['rest.exceptions.ExceptionMiddleware']``
-
-   - This step is optional and is only needed if you wish to be able to raise an HttpError from a view.
+   - This step is optional and is only needed if you want to be able to raise an HttpError from a view.
 3. Add the package to the list of installed apps (optional): INSTALLED_APPS += ['rest']
-
-   - This step is optional and is only needed if you plan on using the supplied custom django commands.
+   - This step is optional and is only needed if you plan on using the supplied custom django command(s).
 
 ###########################
 Why Another REST Framework?
@@ -18,7 +22,7 @@ That's a great question, and the simplest answer to it is that this really isn't
 
 With the introduction of class-based views in version 1.3 of Django, the web framework has nearly everything it needs built in to create RESTful APIs, but just a few things are missing. This "framework" supplies those last few things.
 
-Think of ______ as the code that you would have written to get class-based views working properly as a platform for RESTful API development. Looked at from that view, you start to understand what ______ is; it's a collection of code that makes it possible to create RESTful APIs with Django's class-based views, nothing more and nothing less.
+Think of Simple REST as the code that you would have written to get class-based views working properly as a platform for RESTful API development. Looked at from that view, you start to understand what Simple REST1 is; it's a collection of code that makes it possible to create RESTful APIs with Django's class-based views, nothing more and nothing less.
 
 If you like creating your API by hand, laboring over every last URL, then this is the framework for you. If you want something a little more full featured that handles creating large swaths of your API from Django models and things like that, let me suggest a few excellent frameworks: `Tastypie`_, `Piston`_, and `Django REST`_.
 
@@ -178,7 +182,7 @@ Now, this can get a bit tedious if we have lots of resources and they all tend t
             db.close()
             return HttpResponse(status=200)
 
-Before we leave the topic of authentication decorators there are two more items I'd like to point out. First, another good reason for using the framework's authentication decorators whenever possible is that when authentication fails they return the correct response from a RESTful point of view. The typical Django authentication decorators will try to redirect the user to the login page. While this is great when you're on a webpage, when accessing the resource from any other type of client, receiving a 401 (Unauthorized) is the preferred response and the one that is returned when using _______ authentication decorators.
+Before we leave the topic of authentication decorators there are two more items I'd like to point out. First, another good reason for using the framework's authentication decorators whenever possible is that when authentication fails they return the correct response from a RESTful point of view. The typical Django authentication decorators will try to redirect the user to the login page. While this is great when you're on a webpage, when accessing the resource from any other type of client, receiving a 401 (Unauthorized) is the preferred response and the one that is returned when using Simple REST authentication decorators.
 
 The other item I want to mention is the ``signature_required`` authentication decorator. Many APIs use a secure signature to identify a user and so we've added an authentication decorator that will add that functionality to your resources. The ``signature_required`` decorator will expect that an `HMAC`_, as defined by `RFC 2104`_, is sent with the HTTP request in order to authenticate the user. An HMAC is built around a user's secret key and so there needs to be a way for the ``signature_required`` decorator to get that secret key and that is done by providing the decorator with a function that takes a Django `HttpRequest`_ object and any number of positional and keyword arguments as defined by the URLconf. Let's take a look at an example of using the ``signature_required`` decorator with our sample resource code::
 
@@ -228,9 +232,11 @@ The other item I want to mention is the ``signature_required`` authentication de
 
 There's also another decorator called ``auth_required`` that works in the same manner as the ``signature_required`` (meaning that it takes a function that returns a secret key as well) but that requires that the user is either logged in or has a valid signature before granting them access to the resource.
 
-Finally, if you're using the ``signature_required`` or ``auth_required`` decorator in your code and need a little extra help debugging your resources, specifically you need help generating a secure signature, _______ provides a custom command called ``urlencode`` that takes a set of data as key/value pairs and an optional secret key and returns a URL encoded string that you can copy and paste directly into a cURL command or other helpful tool such as the `REST Console`_ for Chrome. An example of how to use the ``urlencode`` command is listed below::
+Finally, if you're using the ``signature_required`` or ``auth_required`` decorator in your code and need a little extra help debugging your resources, specifically you need help generating a secure signature, Simple REST provides a custom command called ``urlencode`` that takes a set of data as key/value pairs and an optional secret key and returns a URL encoded string that you can copy and paste directly into a cURL command or other helpful tool such as the `REST Console`_ for Chrome. An example of how to use the ``urlencode`` command is listed below::
 
-    python manage.py urlencode --secret-key=test foo=1 bar=2 baz=3 name='Maxwell Hammer'
+    % python manage.py urlencode --secret-key=test foo=1 bar=2 baz=3 name='Maxwell Hammer'
+    bar=2&name=Maxwell+Hammer&baz=3&sig=623251d0a98d5eb5a284ff0d2683a5e6cd3b03545fc02ac6bd0bcfb4259f5779&t=1343939956&foo=1
+
 
 ###############
 Form Validation
@@ -238,7 +244,7 @@ Form Validation
 
 If you want to use a form to validate the data in a REST request (e.g., a POST to create a new resource) you can run into some problems using Django's ModelForm class. Specifically, let's assume that you have a model that has several optional attributes with default values specified. If you send a request to create a new instance of this class but only include data for a handful of the optional attributes, you'd expect that the form object you create would not fail validation since saving the object would mean that the new record would simply end up with the default values for the missing attributes. This is, however, not the case with Django's ModelForm class. It is expecting to see all of the data in every request and will fail if any is missing.
 
-To solve this issue, the _________ framework provides a ``ModelForm`` class in ``rest.forms`` that inherits from Django's ``ModelForm`` and initializes the incoming request with the default values from the underlying model object for any missing attributes. This allows the form validation to work correctly and for the new object to be saved with only a portion of the full set of attributes sent within the request. To use the class, simply import it instead of the normal Django ``ModelForm`` and have your form class inherit from it instead of Django's.
+To solve this issue, the Simple REST framework provides a ``ModelForm`` class in ``rest.forms`` that inherits from Django's ``ModelForm`` and initializes the incoming request with the default values from the underlying model object for any missing attributes. This allows the form validation to work correctly and for the new object to be saved with only a portion of the full set of attributes sent within the request. To use the class, simply import it instead of the normal Django ``ModelForm`` and have your form class inherit from it instead of Django's.
 
 ########
 Upcoming
