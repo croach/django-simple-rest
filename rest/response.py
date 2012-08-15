@@ -77,8 +77,7 @@ class RESTfulResponse(object):
 
     def render_to_response(self, request, context_dict=None, status=200):
         mimetype = mimeparse.best_match(self.supported_mimetypes.keys(), request.META['HTTP_ACCEPT'])
-        import ipdb; ipdb.set_trace()
-        mimetype = mimetypes.guess_type(request.path_info)[0] or mimetype
+        mimetype = mimetypes.guess_type(request.path_info.rstrip('/'))[0] or mimetype
         content_type = '%s; charset=%s' % (mimetype, settings.DEFAULT_CHARSET)
 
         templ_or_func = self.supported_mimetypes.get(mimetype)
