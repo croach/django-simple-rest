@@ -3,7 +3,7 @@ distribute_setup.use_setuptools()
 
 from setuptools import setup, find_packages
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 __author__ = 'Christopher Roach'
 __email__ = 'croach@freshplum.com'
 __license__ = ''

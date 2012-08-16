@@ -1,3 +1,4 @@
+import collections
 import mimetypes
 
 import mimeparse
@@ -60,43 +61,51 @@ class RESTfulResponse(object):
         def decorator(view_func):
             def wrapper(request, *args, **kwargs):
                 results = view_func(request, *args, **kwargs)
-                try:
-                    context_dict, status_code = results
-                except ValueError:
-                    context_dict, status_code = results, 200
+
+                # Get the status code, if one was provided
+                if isinstance(results, collections.Sequence) and len(results) == 2:
+                    try:
+                        data, status_code = results[0], int(results[1])
+                    except Exception:
+                        data, status_code = results, 200
+                else:
+                    data, status_code = results, 200
+
                 # TODO: What about a view that returns a normal Django
                 #       HttpResponse object? Should we allow this to error
                 #       out when one is encountered? Should we just allow it
                 #       to propogate through (i.e., kind of an override)? Or,
                 #       should we fectch the content from it and pass that to
                 #       render_to_response method?
-                response = self.render_to_response(request, context_dict, status_code)
+                response = self.render_to_response(request, data, status_code)
                 return response
             return wrapper
         return wrap_object(view_obj, decorator)
 
-    def render_to_response(self, request, context_dict=None, status=200):
+    def render_to_response(self, request, data=None, status=200):
         mimetype = mimeparse.best_match(self.supported_mimetypes.keys(), request.META['HTTP_ACCEPT'])
         mimetype = mimetypes.guess_type(request.path_info.rstrip('/'))[0] or mimetype
         content_type = '%s; charset=%s' % (mimetype, settings.DEFAULT_CHARSET)
 
         templ_or_func = self.supported_mimetypes.get(mimetype)
+
+        # If a template or function isn't found, return a 415 (unsupportted media type) response
         if not templ_or_func:
-            templ_or_func = self.supported_mimetypes[DEFAULT_MIMETYPE]
+            return HttpResponse(status=415)
 
         if isinstance(templ_or_func, str):
-            def serialize(context_dict):
-                context_dict = context_dict or {}
-                response = render_to_response(templ_or_func, context_dict)
+            def serialize(data):
+                data = data or {}
+                response = render_to_response(templ_or_func, data)
                 response['Content-Type'] = content_type
                 response.status_code = status
                 return response
         else:
-            def serialize(context_dict):
-                if context_dict:
-                    response = HttpResponse(templ_or_func(context_dict), content_type=content_type, status=status)
+            def serialize(data):
+                if data:
+                    response = HttpResponse(templ_or_func(data), content_type=content_type, status=status)
                 else:
                     response = HttpResponse(content_type=content_type, status=status)
                 return response
 
-        return serialize(context_dict)
+        return serialize(data)
