@@ -1,10 +1,7 @@
-import inspect
 from datetime import datetime
-from functools import wraps
-
-from django.utils.decorators import method_decorator, available_attrs
 
 from .signature import calculate_signature
+from ..utils.decorators import wrap_object
 from ..exceptions import HttpError
 
 
@@ -68,38 +65,13 @@ def request_passes_test(test_func):
     arguments as defined by the urlconf entry for the decorated resource.
     """
     def decorator(view_func):
-        @wraps(view_func, assigned=available_attrs(view_func))
+        # @wraps(view_func, assigned=available_attrs(view_func))
         def _wrapped_view(request, *args, **kwargs):
             if test_func(request, *args, **kwargs):
                 return view_func(request, *args, **kwargs)
             raise HttpError(status=401)
         return _wrapped_view
     return decorator
-
-
-def wrap_object(obj, decorator):
-    """
-    Decorates the given object with the decorator function.
-
-    If obj is a method, the method is decorated with the decorator function
-    and returned. If obj is a class (i.e., a class based view), the methods
-    in the class corresponding to HTTP methods will be decorated and the
-    resultant class object will be returned.
-    """
-    actual_decorator = method_decorator(decorator)
-
-    if inspect.isfunction(obj):
-        wrapped_obj = actual_decorator(obj)
-    elif inspect.isclass(obj):
-        for method_name in obj.http_method_names:
-            if hasattr(obj, method_name):
-                method = getattr(obj, method_name)
-                setattr(obj, method_name, actual_decorator(method))
-        wrapped_obj = obj
-    else:
-        raise TypeError("received an object of type '{0}' expected 'function' or 'classobj'.".format(type(obj)))
-
-    return wrapped_obj
 
 
 def validate_signature(request, secret_key):

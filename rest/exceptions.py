@@ -1,5 +1,7 @@
 from django.http import HttpResponse
 
+from .response import RESTfulResponse
+
 
 class HttpError(Exception):
     def __init__(self, message=None, status=500):
@@ -17,7 +19,9 @@ class ExceptionMiddleware(object):
         """
         response = None
         if isinstance(exception, HttpError):
-            response = HttpResponse(status=exception.status)
             if exception.message:
-                response.content = exception.message
+                context_dict = {'message': exception.message}
+                response = RESTfulResponse().render_to_response(request, context_dict, exception.status)
+            else:
+                response = RESTfulResponse().render_to_response(request, status=exception.status)
         return response
