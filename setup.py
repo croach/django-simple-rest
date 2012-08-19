@@ -3,7 +3,7 @@ distribute_setup.use_setuptools()
 
 from setuptools import setup, find_packages
 
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 __author__ = 'Christopher Roach'
 __email__ = 'croach@freshplum.com'
 __license__ = 'MIT'
@@ -15,6 +15,7 @@ setup(
     author_email=__email__,
     description='A drop dead simple package for creating RESTful APIs on top of Django',
     long_description=open('README.rst').read(),
+    install_requires=['mimeparse'],
     url='https://github.com/freshplum/django-simple-rest',
     packages=find_packages(),
     zip_safe=False,
