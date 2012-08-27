@@ -1,9 +1,12 @@
-import distribute_setup
-distribute_setup.use_setuptools()
+try:
+    from setuptools import setup, find_packages
+except ImportError:
+    import sys
+    print >>sys.stderr, "Error: setuptools is required to install this package."
+    sys.exit(1)
 
-from setuptools import setup, find_packages
 
-__version__ = '0.4.3'
+__version__ = '0.4.5'
 __author__ = 'Christopher Roach'
 __email__ = 'croach@freshplum.com'
 __license__ = 'MIT'
@@ -15,9 +18,9 @@ setup(
     author_email=__email__,
     description='A drop dead simple package for creating RESTful APIs on top of Django',
     long_description=open('README.rst').read(),
-    install_requires=['mimeparse'],
     url='https://github.com/freshplum/django-simple-rest',
     packages=find_packages(),
+    install_requires=['setuptools', 'mimeparse'],
     zip_safe=False,
     keywords='rest,django',
     classifiers=[
