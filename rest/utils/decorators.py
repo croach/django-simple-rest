@@ -24,7 +24,7 @@ def wrap_object(obj, decorator):
                 method = getattr(obj, method_name)
                 wrapped_method = actual_decorator(method)
                 update_wrapper(wrapped_method, method, assigned=available_attrs(method))
-                setattr(obj, method_name, method)
+                setattr(obj, method_name, wrapped_method)
         wrapped_obj = obj
     else:
         raise TypeError("received an object of type '{0}' expected 'function' or 'classobj'.".format(type(obj)))
