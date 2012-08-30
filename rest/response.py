@@ -62,6 +62,16 @@ class RESTfulResponse(object):
             def wrapper(request, *args, **kwargs):
                 results = view_func(request, *args, **kwargs)
 
+                # TODO: What should be done about a resource that returns a normal
+                #       Django HttpResponse? Right now, if an HttpResponse is
+                #       returned, it is allowed to propogate. In other words, it
+                #       acts just as it would if content negotiation wasn't being
+                #       used. Another option would be to extract the content and
+                #       status code from the HttpResponse object and pass those
+                #       into the render_to_response method.
+                if isinstance(results, HttpResponse):
+                    return results
+
                 # Get the status code, if one was provided
                 if isinstance(results, collections.Sequence) and len(results) == 2:
                     try:
@@ -71,12 +81,6 @@ class RESTfulResponse(object):
                 else:
                     data, status_code = results, 200
 
-                # TODO: What about a view that returns a normal Django
-                #       HttpResponse object? Should we allow this to error
-                #       out when one is encountered? Should we just allow it
-                #       to propogate through (i.e., kind of an override)? Or,
-                #       should we fectch the content from it and pass that to
-                #       render_to_response method?
                 response = self.render_to_response(request, data, status_code)
                 return response
             return wrapper
