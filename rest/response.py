@@ -7,6 +7,7 @@ from django.conf import settings
 from django.shortcuts import render_to_response
 from django.http import HttpResponse
 from django.core import serializers
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models.query import QuerySet
 
 from .utils.decorators import wrap_object
@@ -22,8 +23,7 @@ def serialize_json(content):
         json_serializer = serializers.get_serializer('json')()
         serialized_content = json_serializer.serialize(content, ensure_ascii=False)
     else:
-        json_encoder = serializers.json.DjangoJSONEncoder
-        serialized_content = json.dumps(content, cls=json_encoder, ensure_ascii=False)
+        serialized_content = json.dumps(content, cls=DjangoJSONEncoder, ensure_ascii=False)
     return serialized_content
 
 DEFAULT_MIMETYPE = 'application/json'
