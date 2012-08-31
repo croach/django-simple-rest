@@ -99,14 +99,17 @@ class RESTfulResponse(object):
 
         if isinstance(templ_or_func, str):
             def serialize(data):
-                data = data or {}
-                response = render_to_response(templ_or_func, data)
+                if data is not None:
+                    context = { 'context': data }
+                    response = render_to_response(templ_or_func, context)
+                else:
+                    response = HttpResponse()
                 response['Content-Type'] = content_type
                 response.status_code = status
                 return response
         else:
             def serialize(data):
-                if data:
+                if data is not None:
                     response = HttpResponse(templ_or_func(data), content_type=content_type, status=status)
                 else:
                     response = HttpResponse(content_type=content_type, status=status)
