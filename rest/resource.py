@@ -6,38 +6,31 @@ class Resource(View):
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
-        # If the HTTP method is PUT, load the POST data
-        if request.method.lower() == 'put':
-            request.method = 'POST'
-            request._load_post_and_files()
-            request.method = 'PUT'
-        else:
-            request._load_post_and_files()
+        # Technically, the HTTP spec does not preclude any HTTP request from
+        # containing data in the message body, so load the data into the POST
+        # dict if there is any present
+        method = request.method
+        request.method = 'POST'
+        request._load_post_and_files
 
-        # Check for an overriding method in the GET or POST data,
-        # and set the HTTP method on the request appropriately
+        # Now that message body has been loaded, check for a method override
+        method_override = None
         if request.GET and request.GET.get('_method', None):
-            GET = request.GET.copy()
-            request.method = GET.pop('_method')[0].upper()
-            request.GET = GET
+            request.GET._mutable = True
+            method_override = request.GET.pop('_method')[0].upper()
+            request.GET._mutable = False
         elif request.POST and request.POST.get('_method', None):
-            POST = request.POST.copy()
-            request.method = POST.pop('_method')[0].upper()
-            request.POST = POST
+            request.POST._mutable = True
+            method_override = request.POST.pop('_method')[0].upper()
+            request.POST._mutable = False
 
-        # Manually switch POST data to PUT
-        if (request.method == 'PUT'):
-            request.PUT = request.POST
+        # Set the HTTP method on the request according to the override first
+        # if one exists, and if not, set it back to the original method used
+        request.method = method_override or method
 
-        # Try to dispatch to the right method; if a method doesn't exist,
-        # defer to the error handler. Also defer to the error handler if the
-        # request method isn't on the approved list.
-        if request.method.lower() in self.http_method_names:
-            handler = getattr(self, request.method.lower(), self.http_method_not_allowed)
-        else:
-            handler = self.http_method_not_allowed
+        # Add a dict to hold the message body data to the request based on the
+        # HTTP method used (or the method override if one was provided)
+        if request.method not in ['POST', 'GET']:
+            setattr(request, request.method, request.POST)
 
-        # Have to set request on the View object to make http_method_not_allowed happy
-        self.request = request
-
-        return handler(request, *args, **kwargs)
+        return super(Resource, self).dispatch(request, *args, **kwargs)
