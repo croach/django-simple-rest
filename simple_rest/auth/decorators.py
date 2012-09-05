@@ -1,8 +1,9 @@
 from datetime import datetime
 
+from django.http import HttpResponse
+
 from .signature import calculate_signature
 from ..utils.decorators import wrap_object
-from ..exceptions import HttpError
 
 
 def auth_required(secret_key_func):
@@ -69,7 +70,7 @@ def request_passes_test(test_func):
         def _wrapped_view(request, *args, **kwargs):
             if test_func(request, *args, **kwargs):
                 return view_func(request, *args, **kwargs)
-            raise HttpError(status=401)
+            return HttpResponse(status=401)
         return _wrapped_view
     return decorator
 
