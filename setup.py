@@ -22,7 +22,7 @@ setup(
     packages=find_packages(),
     install_requires=['setuptools', 'mimeparse'],
     zip_safe=False,
-    keywords='rest,django',
+    keywords='rest,django,api',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Web Environment',
