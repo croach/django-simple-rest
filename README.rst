@@ -36,7 +36,27 @@ If you like creating your API by hand, laboring over every last URL, then this i
 How do I use it?
 ################
 
-There's nothing to it, it works just like you'd expect it to---assuming you're familiar with Django's `class based views`_. Before we get started though, let's create a base project and application for us to play around with. The code in the rest of this document will assume that you're using Django 1.4 (you can follow along using Django 1.3, but your directory structure will be slightly different form the one below) or greater and that you've created a project called ``simple_rest_example`` and an app within it called ``phonebook``. If you've set everything up correctly, you should have a directory structure that matches the one shown below::
+There's nothing to it, it works just like you'd expect it to---assuming you're familiar with Django's `class based views`_. Before we get started though, let's create a base project and application for us to play around with.
+
+####################
+Sample Project Setup
+####################
+
+The code in the rest of this document will assume that you're using Django 1.4 or greater (you can follow along using Django 1.3, but your directory structure will be slightly different form the one below) and that you've created a project called ``simple_rest_example`` and an application within it called ``phonebook``.
+
+Once you've created your sample project and application, you'll need to add a new URLconf to the phonebook application where we will add all of our routes for the duration of this tutorial. Then, update the URLconf in the ``simple_rest_example`` folder to include the URLconf you've just created. This will allow us to do all of our work in the phonebook app from here on out. The ``urls.py`` file in your ``simple_rest_example`` folder should now look like the following::
+
+    # =============================
+    # simple_rest_example/views.py
+    # =============================
+
+    from django.conf.urls import patterns, include, url
+
+    urlpatterns = patterns('',
+        url(r'^phonebook/', include('phonebook.urls')),
+    )
+
+If you've set everything up correctly, you should have a directory structure that matches the one shown below::
 
     simple_rest_example
             |
@@ -51,66 +71,84 @@ There's nothing to it, it works just like you'd expect it to---assuming you're f
             |       |___ __init__.py
             |       |___ models.py
             |       |___ tests.py
+            |       |___ urls.py
             |       |___ views.py
             |
             |___ manage.py
 
+Finally, we're going to create a new model class called ``Contact`` and create our database to hold all of the contacts in our phonebook. Open up ``phonebook/models.py`` and update it to match the following::
+
+    # =====================
+    # phonebook/models.py
+    # =====================
+
+    from django.db import models
+
+    class Contact(models.Model):
+        fname = models.CharField(max_length=30)
+        lname = models.CharField(max_length=30)
+        phone_number = models.CharField(max_length=12)
+
+Once you've added a new model, update the ``settings.py`` file in the ``simple_rest_example`` directory to use a sqlite database named phonebook.db and run the ``manage.py syncdb`` command to create the database. Make sure to add an administrator account so that we'll have something to use later on when discussing the authentication options provided by the Simple REST framework.
+
+###################
+Creating a Resource
+###################
+
 Now that you've got your development environment set up properly, let's take a look at an example of how to use the Simple REST framework to create a dead simple phonebook application.
 
-The sample code below shows one example of how we could create a simple resource for managing lists of people (in all of the examples below, we'll be using shelve for persistence since we're only concerned with the creation of the API, but you should never use shelve in production)::
+The sample code below shows one example of how we could create a simple resource for managing lists of contacts::
 
     # ====================
     # phonebook/views.py
     # ====================
 
-    import shelve
-    import json
-
     from django.http import HttpResponse
+    from django.core import serializers
 
-    from rest import Resource
-    from rest.exceptions import HttpError
+    from simple_rest import Resource
+
+    from .models import Contact
 
 
-    class MyResource(Resource):
+    class Contacts(Resource):
 
-        def get(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            data = dict(db)
-            db.close()
-            return HttpResponse(json.dumps(data), content_type='application/json', status=200)
+        def get(self, request, contact_id=None, **kwargs):
+            json_serializer = serializers.get_serializer('json')()
+            if contact_id:
+                contacts = json_serializer.serialize(Contact.objects.filter(pk=contact_id))
+            else:
+                contacts = json_serializer.serialize(Contact.objects.all())
+            return HttpResponse(contacts, content_type='application/json', status=200)
 
         def post(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            name = request.POST.get('name', '')
-            db[name] = True
-            db.sync()
-            db.close()
+            Contact.objects.create(
+                fname=request.POST.get('fname'),
+                lname=request.POST.get('lname'),
+                phone_number=request.POST.get('phone_number'))
             return HttpResponse(status=201)
 
-        def delete(self, request, name):
-            db = shelve.open('/tmp/db')
-            if not db.has_key(str(name)):
-                db.close()
-                raise HttpError('Name does not exist', status=404)
-            del(db[name])
-            db.sync()
-            db.close()
+        def delete(self, request, contact_id):
+            contact = Contact.objects.get(pk=contact_id)
+            contact.delete()
             return HttpResponse(status=200)
 
-In the example ``phonebook/views.py`` above, we've imported the ``Resource`` class, which simply inherits from Django's ``View`` class and provides the extra sauce to get all of the HTTP methods working properly. Then, we create a new class that inherits from the ``Resource`` class, and we add a function to our new class to handle each HTTP method that we want to allow. The only requirement is that the function name must match the HTTP method name, so `get` or `GET` for a GET call and so forth. Simple enough, right? So, let's see how to hook up our resource::
+In the example code above, we imported the ``Resource`` class, which simply inherits from Django's ``View`` class and provides the extra sauce to get all of the HTTP methods working properly. Then, we create a new class that inherits from the ``Resource`` class, and we add a function for each HTTP method that we want to handle. The only requirement is that the function name must match the HTTP method name, so `get` or `GET` for a GET call and so forth. Simple enough, right? So, let's see how to hook up our resource::
 
-    # ============================
-    # simple_rest_example/urls.py
-    # ============================
+    # ===================
+    # phonebook/urls.py
+    # ===================
 
     from django.conf.urls import patterns, include, url
 
-    from .views import MyResource
+    from .views import Contacts
 
     urlpatterns = patterns('',
-        url(r'^api/resource/?$', MyResource.as_view()),
-        url(r'^api/resource/(?P<name>[a-zA-Z-]+)/?$', MyResource.as_view()),
+        # Allow access to the contacts resource collection
+        url(r'^contacts/?$', Contacts.as_view()),
+
+        # Allow access to a single contact resource
+        url(r'^contacts/(?P<name>[a-zA-Z-]+)/?$', Contacts.as_view()),
     )
 
 The sample ``urls.py`` above shows exactly how we would go about creating the URL patterns for our example resource. Again, if you're familiar with Django class based views, there should be no surprises here.
@@ -119,9 +157,9 @@ The sample ``urls.py`` above shows exactly how we would go about creating the UR
 Authentication
 ##############
 
-So what about authentication? Well, you could simply use the ``method_decorator`` function as the `Django docs suggest`_ to decorate each method in your resource with the appropriate authentication decorator. Assuming you want the entire resource protected you could also decorate the result of the call to ``as_view`` in the URLconf. Both of these options are completely valid and you can feel free to use them, this framework does provide another option, however.
+So what about authentication? Well, you could simply use the ``method_decorator`` function as the `Django docs suggest`_ to decorate each method in your resource with the appropriate authentication decorator. Assuming you want the entire resource protected, you could also decorate the result of the call to ``as_view`` in the URLconf. Both of these options are completely valid and you can feel free to use them, this framework does provide another option, however.
 
-In the ``rest.auth.decorators`` module you'll find decorators there that you can use to add authentication to your resources. Let's take a look at a few examples using our sample code from above::
+In the ``simple_rest.auth.decorators`` module you'll find decorators there that you can use to add authentication to your resources. Let's take a look at a few examples using our sample code from above::
 
     # ===================
     # phonebook/views.py
