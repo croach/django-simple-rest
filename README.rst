@@ -36,7 +36,7 @@ If you like creating your API by hand, laboring over every last URL, then this i
 How do I use it?
 ################
 
-There's nothing to it, it works just like you'd expect it to---assuming you're familiar with Django's `class based views`_. Before we get started though, let's create a base project and application for us to play around with. The code in the rest of this document will assume that you're using Django 1.4 or greater and that you've created a project called ``simple_rest_example`` and an app within it called ``people``. If you've set everything up correctly, you should have a directory structure that matches the one shown below::
+There's nothing to it, it works just like you'd expect it to---assuming you're familiar with Django's `class based views`_. Before we get started though, let's create a base project and application for us to play around with. The code in the rest of this document will assume that you're using Django 1.4 (you can follow along using Django 1.3, but your directory structure will be slightly different form the one below) or greater and that you've created a project called ``simple_rest_example`` and an app within it called ``phonebook``. If you've set everything up correctly, you should have a directory structure that matches the one shown below::
 
     simple_rest_example
             |
@@ -46,7 +46,7 @@ There's nothing to it, it works just like you'd expect it to---assuming you're f
             |           |___ urls.py
             |           |___ wsgi.py
             |
-            |___ people
+            |___ phonebook
             |       |
             |       |___ __init__.py
             |       |___ models.py
@@ -55,11 +55,13 @@ There's nothing to it, it works just like you'd expect it to---assuming you're f
             |
             |___ manage.py
 
-Now that you've got your development environment set up properly, let's take a look at a simple example of how to use the Simple REST framework. The example code below shows one example of how we could create a simple resource for managing lists of people::
+Now that you've got your development environment set up properly, let's take a look at an example of how to use the Simple REST framework to create a dead simple phonebook application.
 
-    # ===============
-    # views.py
-    # ===============
+The sample code below shows one example of how we could create a simple resource for managing lists of people (in all of the examples below, we'll be using shelve for persistence since we're only concerned with the creation of the API, but you should never use shelve in production)::
+
+    # ====================
+    # phonebook/views.py
+    # ====================
 
     import shelve
     import json
@@ -96,11 +98,12 @@ Now that you've got your development environment set up properly, let's take a l
             db.close()
             return HttpResponse(status=200)
 
-In the example ``people/views.py`` above, we've imported the ``Resource`` class, which simply inherits from Django's ``View`` class and provides the extra sauce to get all of the HTTP methods working properly. Then, we create a new class that inherits from the ``Resource`` class, and we add a function to our new class to handle each HTTP method that we want to allow. The only requirement is that the function name must match the HTTP method name, so `get` or `GET` for a GET call and so forth. Simple enough, right? So, let's see how to hook up our resource::
+In the example ``phonebook/views.py`` above, we've imported the ``Resource`` class, which simply inherits from Django's ``View`` class and provides the extra sauce to get all of the HTTP methods working properly. Then, we create a new class that inherits from the ``Resource`` class, and we add a function to our new class to handle each HTTP method that we want to allow. The only requirement is that the function name must match the HTTP method name, so `get` or `GET` for a GET call and so forth. Simple enough, right? So, let's see how to hook up our resource::
 
-    # ===============
-    # urls.py
-    # ===============
+    # ============================
+    # simple_rest_example/urls.py
+    # ============================
+
     from django.conf.urls import patterns, include, url
 
     from .views import MyResource
@@ -120,9 +123,9 @@ So what about authentication? Well, you could simply use the ``method_decorator`
 
 In the ``rest.auth.decorators`` module you'll find decorators there that you can use to add authentication to your resources. Let's take a look at a few examples using our sample code from above::
 
-    # ===============
-    # views.py
-    # ===============
+    # ===================
+    # phonebook/views.py
+    # ===================
 
     import shelve
     import json
@@ -166,9 +169,9 @@ Assuming that we don't mind if anyone sees our collection of names, we can leave
 
 Now, this can get a bit tedious if we have lots of resources and they all tend to have the same authentication requirements. So, the authentication decorators work on both classes and methods. In the example below we're adding a superuser requirement to every method offered by the resource simply by decorating the resource class::
 
-    # ===============
-    # views.py
-    # ===============
+    # ===================
+    # phonebook/views.py
+    # ===================
 
     import shelve
     import json
@@ -211,9 +214,9 @@ Before we leave the topic of authentication decorators there are two more items 
 
 The other item I want to mention is the ``signature_required`` authentication decorator. Many APIs use a secure signature to identify a user and so we've added an authentication decorator that will add that functionality to your resources. The ``signature_required`` decorator will expect that an `HMAC`_, as defined by `RFC 2104`_, is sent with the HTTP request in order to authenticate the user. An HMAC is built around a user's secret key and so there needs to be a way for the ``signature_required`` decorator to get that secret key and that is done by providing the decorator with a function that takes a Django `HttpRequest`_ object and any number of positional and keyword arguments as defined by the URLconf. Let's take a look at an example of using the ``signature_required`` decorator with our sample resource code::
 
-    # ===============
-    # views.py
-    # ===============
+    # ===================
+    # phonebook/views.py
+    # ===================
 
     import shelve
     import json
@@ -279,9 +282,9 @@ The Simple Rest framework provides a mechanism by which you can add content nego
 
 The first example below shows the absolute simplest way to use the RESTfulResponse class to provide a JSON only representation of a resource. JSON is one of the most popular resource representations (arguably the most popular, at least for APIs being created today) and, as a result, the RESTfulResponse class provides support for it by default. So, to provide a JSON representation of your resource using the RESTfulResponse class, you simply create an instance of it and decorate your resource just like the example shows below::
 
-    # ===============
-    # views.py
-    # ===============
+    # ===================
+    # phonebook/views.py
+    # ===================
 
     import shelve
 
@@ -312,9 +315,9 @@ Notice that in the ``get`` method above we are returning a simple python dict ra
 
 In the example above we only decorated the ``get`` method, but an instance of RESTfulResponse works just as the authentication decorators we saw earlier in that they can be used to decorate methods or full classes. In the next example we decorate the entire resource class and, though we can continue to return an HttpResponse object, if we want all of our methods to enjoy the benefits provided by the RESTfulResponse decorator, we need to change what they return from an HttpResponse object to a serializable python object. The code below shows how you can do that for the simple example we saw above::
 
-    # ===============
-    # views.py
-    # ===============
+    # ===================
+    # phonebook/views.py
+    # ===================
 
     import shelve
 
@@ -352,21 +355,21 @@ The first step is to create our XML template. The RESTfulResponse decorator will
     <?xml version="1.0"?>
 
     {% with people=context.values|dictsort:"lname" %}
-    <people>
+    <phonebook>
       {% for person in people %}
           <person>
             <fname>{{ person.fname }}</fname>
             <lname>{{ person.lname }}</lname>
           </person>
       {% endfor %}
-    </people>
+    </phonebook>
     {% endwith %}
 
 Once we've got the template created, we just need to create a new RESTfulResponse decorator with the correct mime type mapped to the template. The code below shows how to do that; keep in mind that JSON is the default, so our mime type mapping dict doesn't need to contain an entry for JSON::
 
-    ################
-    # views.py
-    ################
+    # ===================
+    # phonebook/views.py
+    # ===================
 
     import shelve
 
