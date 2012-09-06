@@ -301,7 +301,70 @@ Form Validation
 
 If you want to use a form to validate the data in a REST request (e.g., a POST to create a new resource) you can run into some problems using Django's ModelForm class. Specifically, let's assume that you have a model that has several optional attributes with default values specified. If you send a request to create a new instance of this class but only include data for a handful of the optional attributes, you'd expect that the form object you create would not fail validation since saving the object would mean that the new record would simply end up with the default values for the missing attributes. This is, however, not the case with Django's ModelForm class. It is expecting to see all of the data in every request and will fail if any is missing.
 
-To solve this issue, the Simple REST framework provides a ``ModelForm`` class in ``rest.forms`` that inherits from Django's ``ModelForm`` and initializes the incoming request with the default values from the underlying model object for any missing attributes. This allows the form validation to work correctly and for the new object to be saved with only a portion of the full set of attributes sent within the request. To use the class, simply import it instead of the normal Django ``ModelForm`` and have your form class inherit from it instead of Django's.
+To solve this issue, the Simple REST framework provides a ``ModelForm`` class in ``simple_rest.forms`` that inherits from Django's ``ModelForm`` and initializes the incoming request with the default values from the underlying model object for any missing attributes. This allows the form validation to work correctly and for the new object to be saved with only a portion of the full set of attributes sent within the request. To use the class, simply import it instead of the normal Django ``ModelForm`` and have your form class inherit from it instead of Django's.
+
+To give it a try, let's add another field to the ``Contact`` model class in ``phonebook/models.py`` to hold an honorific for a contact. We'll make this field optional and make the default title be '(no title)'. With these new changes, the ``models.py`` file should match the one listed below::
+
+    # ====================
+    # phonebook/models.py
+    # ====================
+
+    from django.db import models
+
+    class Contact(models.Model):
+        title = models.CharField(max_length=10, default='(no title)')
+        fname = models.CharField(max_length=30)
+        lname = models.CharField(max_length=30)
+        phone_number = models.CharField(max_length=12)
+
+Once, you've updated the ``models.py`` file, either delete and rerun ``syncdb`` or add the new column to the phonebook_contact table by hand. Then, create a new form class called ``ContactForm`` in the ``phonebook/views.py`` file and set its model to ``Contact``. Then you can remove the code to create a new contact in the ``post`` method and replace it with code that uses the new ``Contactform`` class. The result should be similar to the following::
+
+    # ====================
+    # phonebook/views.py
+    # ====================
+
+    from django.http import HttpResponse
+    from django.core import serializers
+
+    from simple_rest import Resource
+    from simple_rest.auth.decorators import signature_required
+    from simple_rest.forms import ModelForm
+
+    from .models import Contact
+
+
+    def secret_key(request, *args, **kwargs):
+        return 'test'
+
+
+    class ContactForm(ModelForm):
+        class Meta:
+            model = Contact
+
+
+    @signature_required(secret_key)
+    class Contacts(Resource):
+
+        def get(self, request, contact_id=None, **kwargs):
+            json_serializer = serializers.get_serializer('json')()
+            if contact_id:
+                contacts = json_serializer.serialize(Contact.objects.filter(pk=contact_id))
+            else:
+                contacts = json_serializer.serialize(Contact.objects.all())
+            return HttpResponse(contacts, content_type='application/json', status=200)
+
+        def post(self, request, *args, **kwargs):
+            form = ContactForm(request.POST.copy())
+            if not form.is_valid():
+                return HttpResponse(status=409)
+            form.save()
+            return HttpResponse(status=201)
+
+        def delete(self, request, contact_id):
+            contact = Contact.objects.get(pk=contact_id)
+            contact.delete()
+            return HttpResponse(status=200)
+
 
 ###################
 Content Negotiation
