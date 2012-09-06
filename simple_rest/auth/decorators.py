@@ -66,7 +66,6 @@ def request_passes_test(test_func):
     arguments as defined by the urlconf entry for the decorated resource.
     """
     def decorator(view_func):
-        # @wraps(view_func, assigned=available_attrs(view_func))
         def _wrapped_view(request, *args, **kwargs):
             if test_func(request, *args, **kwargs):
                 return view_func(request, *args, **kwargs)
@@ -82,10 +81,9 @@ def validate_signature(request, secret_key):
 
     # Extract the request parameters according to the HTTP method
     data = request.GET.copy()
-    if request.method.lower() == 'post':
-        data.update(request.POST.copy())
-    elif request.method.lower() == 'put':
-        data.update(request.PUT.copy())
+    if request.method != 'GET':
+        message_body = getattr(request, request.method, {})
+        data.update(message_body)
 
     # Make sure the request contains a signature
     if data.get('sig', False):
