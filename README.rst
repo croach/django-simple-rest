@@ -375,138 +375,199 @@ Content Negotiation
 
 A key factor to having a truly RESTful API is the decoupling of your resources from their representation. In other words, whether or not a resource is delivered as XML or JSON shouldn't be part of the resource itself. This is where `content negotiation`_ comes into play. It provides a standardized way for a single URI to serve a resource while still allowing the user to request several different representations of that resource. Content negotiation is part of the HTTP specification and the mechanism it provides the client for requesting a representation is through the Accept header. In the Accept header the client gives a list of acceptable representations and the server works out the best possible representation of the resource to deliver according to what is available on the server and desired representations requested.
 
-The Simple Rest framework provides a mechanism by which you can add content negotiation to your resources. This functionality is provided in the `RESTfulResponse`_ class. The RESTfullResponse class is an implementation of the method described by James Bennett in his article "`Another take on content negotiation`_". The way it works is simple, create an instance of the class and use it as a decorator on your resource. The rest of this section will take a look at a few examples to show the different options available to you when using the RESTfulResonse class to provide multiple representations of your resource.
+The Simple Rest framework provides a mechanism by which you can add content negotiation to your resources. This functionality is provided in the `RESTfulResponse`_ class. The ``RESTfulResponse`` class is an implementation of the method described by James Bennett in his article "`Another take on content negotiation`_". The way it works is simple, create an instance of the class and use it as a decorator on your resource. The rest of this section will take a look at a few examples to show the different options available to you when using the ``RESTfulResonse`` class to provide multiple representations of your resource.
 
-The first example below shows the absolute simplest way to use the RESTfulResponse class to provide a JSON only representation of a resource. JSON is one of the most popular resource representations (arguably the most popular, at least for APIs being created today) and, as a result, the RESTfulResponse class provides support for it by default. So, to provide a JSON representation of your resource using the RESTfulResponse class, you simply create an instance of it and decorate your resource just like the example shows below::
+The first example below shows the absolute simplest way to use the ``RESTfulResponse`` class to provide a JSON only representation of a resource. JSON is one of the most popular resource representations (arguably the most popular, at least for APIs being created today) and, as a result, the ``RESTfulResponse`` class provides support for it by default. So, to provide a JSON representation of your resource using the RESTfulResponse class, you simply create an instance of it and decorate your resource just like the example shows below::
 
-    # ===================
+    # ====================
     # phonebook/views.py
-    # ===================
-
-    import shelve
+    # ====================
 
     from django.http import HttpResponse
 
-    from rest import Resource
-    from rest.response import RESTfulResponse
+    from simple_rest import Resource
+    from simple_rest.auth.decorators import signature_required
+    from simple_rest.forms import ModelForm
+    from simple_rest.response import RESTfulResponse
+
+    from .models import Contact
 
 
-    class MyResource(Resource):
+    def secret_key(request, *args, **kwargs):
+        return 'test'
+
+
+    class ContactForm(ModelForm):
+        class Meta:
+            model = Contact
+
+
+    @signature_required(secret_key)
+    class Contacts(Resource):
 
         @RESTfulResponse()
-        def get(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            data = dict(db)
-            db.close()
-            return data
+        def get(self, request, contact_id=None, **kwargs):
+            if contact_id:
+                contacts = Contact.objects.filter(pk=contact_id)
+            else:
+                contacts = Contact.objects.all()
+            return contacts
 
         def post(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            name = request.POST.get('name', '')
-            db[name] = True
-            db.sync()
-            db.close()
+            form = ContactForm(request.POST.copy())
+            if not form.is_valid():
+                return HttpResponse(status=409)
+            form.save()
             return HttpResponse(status=201)
 
-Notice that in the ``get`` method above we are returning a simple python dict rather than the usual HttpResponse object. When using content negotiation on your resources, simple serializable python objects are the typical response. If you return an HttpResponse object it will simply bypass the content negotiation and just return the response object as is.
+        def delete(self, request, contact_id):
+            contact = Contact.objects.get(pk=contact_id)
+            contact.delete()
+            return HttpResponse(status=200)
 
-In the example above we only decorated the ``get`` method, but an instance of RESTfulResponse works just as the authentication decorators we saw earlier in that they can be used to decorate methods or full classes. In the next example we decorate the entire resource class and, though we can continue to return an HttpResponse object, if we want all of our methods to enjoy the benefits provided by the RESTfulResponse decorator, we need to change what they return from an HttpResponse object to a serializable python object. The code below shows how you can do that for the simple example we saw above::
+Notice that in the ``get`` method above we are no longer returning an HttpResponse object, instead we return the ``QuerySet`` of the contacts that matched the GET request. When using content negotiation on your resources, simple serializable python objects are the typical response. If you return an HttpResponse object it will simply bypass the content negotiation and just return the response object as is.
 
-    # ===================
+In the example above we only decorated the ``get`` method, but an instance of RESTfulResponse works just as the authentication decorators we saw earlier in that they can be used to decorate methods or full classes. In the next example we decorate the entire resource and, though we can continue to return an HttpResponse object, if we want all of our methods to enjoy the benefits provided by the RESTfulResponse decorator, we need to change what they return from an HttpResponse object to a serializable python object. The code below shows how you can do that for the simple example we saw above::
+
+    # ====================
     # phonebook/views.py
-    # ===================
-
-    import shelve
+    # ====================
 
     from django.http import HttpResponse
 
-    from rest import Resource
-    from rest.response import RESTfulResponse
+    from simple_rest import Resource
+    from simple_rest.auth.decorators import signature_required
+    from simple_rest.forms import ModelForm
+    from simple_rest.response import RESTfulResponse
+
+    from .models import Contact
+
+
+    def secret_key(request, *args, **kwargs):
+        return 'test'
+
+
+    class ContactForm(ModelForm):
+        class Meta:
+            model = Contact
 
 
     @RESTfulResponse()
-    class MyResource(Resource):
+    @signature_required(secret_key)
+    class Contacts(Resource):
 
-        def get(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            data = dict(db)
-            db.close()
-            return data
+        def get(self, request, contact_id=None, **kwargs):
+            if contact_id:
+                contacts = Contact.objects.filter(pk=contact_id)
+            else:
+                contacts = Contact.objects.all()
+            return contacts
 
         def post(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            name = request.POST.get('name', '')
-            db[name] = True
-            db.sync()
-            db.close()
+            form = ContactForm(request.POST.copy())
+            if not form.is_valid():
+                return HttpResponse(status=409)
+            form.save()
             return None, 201
 
-One thing to notice in the code above is that the ``post`` method returns a tuple. That's because when we use the RESTfulResponse decorator it's expected that we are returning a tuple where the first element is the object to be serialized and returned to the client and the second element is the status code of the response. If only a serializable object is returned (as we've done in the ``get`` method), the default status code of 200 (OK) is used. If, on the other hand, you'd like to return an empty response with just the HTTP Response Code set to signify the success or failure of the operation, you can simply return ``None`` for the data object and the desired status code as the second element in the tuple. In ``post`` method in the code sample above we see an example of this. Since performing a POST on our resource creates a new instance of that resource we want to return a 201 () signifying that a new resource was succesfully created and the response body can be empty.
+        def delete(self, request, contact_id):
+            contact = Contact.objects.get(pk=contact_id)
+            contact.delete()
+            return None, 200
 
-The last sample below shows how to provide multiple different representations of
+One thing to notice in the code above is that the ``post`` method returns a tuple. That's because when we use the ``RESTfulResponse`` decorator it's expected that we are returning a tuple the first element of which is the object to be serialized and returned to the client. The second (optional) element of the response tuple is the status code of the response. If only a serializable object is returned (as we've done in the ``get`` method), the default status code of 200 (OK) is used. If, on the other hand, you'd like to return an empty response with just the HTTP Response Code set to signify the success or failure of the operation, you can simply return ``None`` for the data object and the desired status code as the second element in the tuple. In the ``post`` method in the code sample above we see an example of this. Since performing a POST on our resource creates a new instance of that resource we want to return a 201 (Created) signifying that a new resource was succesfully created and the response body can be empty.
 
-Finally, content negotiation doesn't really do much if you only provide a single representation of your resource. The question then becomes: how do we provide more than just the default JSON representation? The answer to that question is that we pass into the RESTfulResponse constructor a dict that maps mime types to either a python callable that can be called on the data object to transform it into the designated representation or a string that points to a template that will be used to produce the desired representation. In this example we'll be using a template to transform the resource into an XML representation.
+Finally, content negotiation doesn't really do much if you only provide a single representation of your resource. The question then becomes: how do we provide more than just the default JSON representation? The answer is that we pass into the ``RESTfulResponse`` constructor a dict that maps mime types to either a python callable that can be called on the data object to transform it into the designated representation or a string that points to a template that will be used to produce the desired representation. In this example we'll be using a template to transform the resource into an XML representation.
 
-The first step is to create our XML template. The RESTfulResponse decorator will automatically provide any data returned from the resource to the template under the name ``context``. In the exmaple code below we sort the people in the database according to last name and return a person element that has fname and lname subelements::
+The first step is to create our XML template. Create a new folder in the phonebook application's directory called ``templates`` and add a file called ``phonebook.xml`` to it. Make sure that the ``django.template.loaders.app_directories.Loader`` line is included, and uncommented, in the ``TEMPLATE_LOADERS`` tuple in ``simple_rest_example/settings.py``. This will ensure that Django will pick up templates within the apps that you've registered in the ``INSTALLED_APPS`` tuple.
+
+Now we just need to add some XML/code to turn our response data into proper XML. The ``RESTfulResponse`` decorator will automatically provide any data returned from the resource to the template under the name ``context``. In the exmaple code below we sort the contacts in the ``context`` variable according to last name and return a contact element that has fname, lname, phone_number, and title subelements::
 
     <?xml version="1.0"?>
-
-    {% with people=context.values|dictsort:"lname" %}
+    {% with contacts=context.values|dictsort:"lname" %}
     <phonebook>
-      {% for person in people %}
-          <person>
-            <fname>{{ person.fname }}</fname>
-            <lname>{{ person.lname }}</lname>
-          </person>
+      {% for contact in contacts %}
+          <contact>
+            <fname>{{ contact.fname }}</fname>
+            <lname>{{ contact.lname }}</lname>
+            <phone_number>{{ contact.phone_number }}</phone_number>
+            <title>{{ contact.title }}</title>
+          </contact>
       {% endfor %}
     </phonebook>
     {% endwith %}
 
 Once we've got the template created, we just need to create a new RESTfulResponse decorator with the correct mime type mapped to the template. The code below shows how to do that; keep in mind that JSON is the default, so our mime type mapping dict doesn't need to contain an entry for JSON::
 
-    # ===================
+    # ====================
     # phonebook/views.py
-    # ===================
-
-    import shelve
+    # ====================
 
     from django.http import HttpResponse
 
-    from rest import Resource
-    from rest.response import RESTfulResponse
+    from simple_rest import Resource
+    from simple_rest.auth.decorators import signature_required
+    from simple_rest.forms import ModelForm
+    from simple_rest.response import RESTfulResponse
+
+    from .models import Contact
 
 
-    json_or_xml = RESTfulResponse({'application/xml': 'myresource.xml'})
+    def secret_key(request, *args, **kwargs):
+        return 'test'
+
+    json_or_xml = RESTfulResponse({'application/xml': 'phonebook.xml'})
+
+
+    class ContactForm(ModelForm):
+        class Meta:
+            model = Contact
+
 
     @json_or_xml
-    class MyResource(Resource):
+    @signature_required(secret_key)
+    class Contacts(Resource):
 
-        def get(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            data = dict(db)
-            db.close()
-            return data
+        def get(self, request, contact_id=None, **kwargs):
+            if contact_id:
+                contacts = Contact.objects.filter(pk=contact_id)
+            else:
+                contacts = Contact.objects.all()
+            return contacts
 
         def post(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            fname = request.POST.get('fname', '')
-            lname = request.POST.get('lname', '')
-            key = '%s_%s' % (lname.lower(), fname.lower())
-            db[key] = {
-                'fname': fname,
-                'lname': lname
-            }
-            db.sync()
-            db.close()
+            form = ContactForm(request.POST.copy())
+            if not form.is_valid():
+                return HttpResponse(status=409)
+            form.save()
             return None, 201
 
+        def delete(self, request, contact_id):
+            contact = Contact.objects.get(pk=contact_id)
+            contact.delete()
+            return None, 200
 
+With the new changes in place, you can get either XML or JSON just by changing the Accept header in your request. The only problem with this scenario though is that you can't always simply change the Accept header. For example, a simple HTML form (no JavaScript) will always send a request with Accept headers set to HTML (or XHTML) and probably some form of XML. If you want to specify the format of the response, and you don't have access to the Accept header for whatever reason, you can simply append a file extension to the URL. The Simple REST framework will accept a file extension on the URL and use it to determine the response, otherwise, if no file extension is present, it will return the requested format according to the Accept header. The only thing we need to do is alter our URL patterns to accept an optional file extension. The newly altered ``phonebook/urls.py`` file can be seen below::
 
-########
-Upcoming
-########
+    # ===================
+    # phonebook/urls.py
+    # ===================
 
-Keep on the lookout for updates to the framework. While it was originally created with the idea of providing just the bare minimum needed to use Django's class-based views for creating RESTful APIs, there are still a few nice features that we are in the process of adding that we think will compliment the framework well while still being true to our minimalist ideals. The most exciting of these updates will be the addition of automatic content negotiation for responses returned from resources.
+    from django.conf.urls import patterns, include, url
+
+    from .views import Contacts
+
+    urlpatterns = patterns('',
+        # Allow access to the contacts resource collection
+        url(r'^contacts(\.(?P<format>[a-zA-Z]+))?/?$', Contacts.as_view()),
+
+        # # Allow access to a single contact resource
+        url(r'^contacts/(?P<contact_id>[0-9]+)(\.(?P<format>[a-zA-Z]+))?/?$', Contacts.as_view()),
+    )
+
+In the example above, we've added a new portion to our regular expression that checks for an optional file extension. In the example, we give it the name ``format``, but this is completely optional. You can name it whatever you like or not name it all. The only reason the code sample above has a name is to make sure that it doesn't end up getting passed into the GET method as the value for ``contact_id`` when the first URL pattern is matched.
+
+With the addition above made to the URLconf, you can now request differnt response formats using either a file extension on the URL or by specifying the desired format in the Accept header. The file extension takes precedence, but either should work.
 
 
 .. _Tastypie: http://tastypieapi.org/
