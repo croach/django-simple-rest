@@ -586,4 +586,4 @@ With the addition above made to the URLconf, you can now request differnt respon
 .. _REST Console: http://restconsole.com
 .. _content negotation: http://en.wikipedia.org/wiki/Content_negotiation
 .. _Another take on content negotiation: http://www.b-list.org/weblog/2008/nov/29/multiresponse/
-.. _RESTFulResponse: https://github.com/freshplum/django-simple-rest/blob/master/rest/response.py
+.. _RESTFulResponse: https://raw.github.com/freshplum/django-simple-rest/master/simple_rest/response.py
