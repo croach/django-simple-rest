@@ -1,6 +1,5 @@
 from optparse import make_option
-import datetime
-import time
+import calendar, datetime
 import urllib
 
 from django.core.management.base import BaseCommand
@@ -38,7 +37,7 @@ specified, the secure signature is also calculated and added to the result."""
                 timestamp = int(timestamp)
             else:
                 dt = datetime.datetime.utcnow()
-                timestamp = int(time.mktime(dt.timetuple()))
+                timestamp = calendar.timegm(dt.timetuple())
             signature = calculate_signature(secret_key, data, timestamp)
             data['t'] = timestamp
             data['sig'] = signature
