@@ -148,7 +148,7 @@ In the example code above, we imported the ``Resource`` class, which simply inhe
         url(r'^contacts/?$', Contacts.as_view()),
 
         # Allow access to a single contact resource
-        url(r'^contacts/(?P<name>[a-zA-Z-]+)/?$', Contacts.as_view()),
+        url(r'^contacts/(?P<contact_id>[0-9]+)/?$', Contacts.as_view()),
     )
 
 The sample ``urls.py`` above shows exactly how we would go about creating the URL patterns for our example resource. Again, if you're familiar with Django class based views, there should be no surprises here.
