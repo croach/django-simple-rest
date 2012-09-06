@@ -133,7 +133,10 @@ The sample code below shows one example of how we could create a simple resource
             contact.delete()
             return HttpResponse(status=200)
 
-In the example code above, we imported the ``Resource`` class, which simply inherits from Django's ``View`` class and provides the extra sauce to get all of the HTTP methods working properly. Then, we create a new class that inherits from the ``Resource`` class, and we add a function for each HTTP method that we want to handle. The only requirement is that the function name must match the HTTP method name, so `get` or `GET` for a GET call and so forth. Simple enough, right? So, let's see how to hook up our resource::
+In the example code above, we imported the ``Resource`` class, which simply inherits from Django's ``View`` class and provides the extra sauce to get all of the HTTP methods working properly. Then, we create a new class that inherits from the ``Resource`` class, and we add a function for each HTTP method that we want to handle. The only requirement is that the function name must match the HTTP method name, so `get` or `GET` for a GET call and so forth.
+On a side, in the ``post`` method, the data for the message body of the request can be accessed through the ``request.POST`` ``QueryDict`` object. Since all exsiting browsers can only handle GET and POST requests, having ``QueryDict``s for GET and POST were all that were needed in the past and so those were all that Django has historically provided. However, with a RESTful API, the server can receive requests using any HTTP method. As a result, the message body for a request can be found in the corresponding ``QueryDict`` on the ``request`` object. For example, if a PUT request is made, the message body data can be accessed through the ``request.PUT`` ``QueryDict``.
+
+Simple enough, right? So, let's see how to hook up our resource::
 
     # ===================
     # phonebook/urls.py
