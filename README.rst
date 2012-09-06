@@ -161,146 +161,139 @@ So what about authentication? Well, you could simply use the ``method_decorator`
 
 In the ``simple_rest.auth.decorators`` module you'll find decorators there that you can use to add authentication to your resources. Let's take a look at a few examples using our sample code from above::
 
-    # ===================
+    # ====================
     # phonebook/views.py
-    # ===================
-
-    import shelve
-    import json
+    # ====================
 
     from django.http import HttpResponse
+    from django.core import serializers
 
-    from rest import Resource
-    from rest.exceptions import HttpError
-    from rest.auth.decorators import login_required, admin_required
+    from simple_rest import Resource
+    from simple_rest.auth.decorators import login_required, admin_required
+
+    from .models import Contact
 
 
-    class MyResource(Resource):
+    class Contacts(Resource):
 
-        def get(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            data = dict(db)
-            db.close()
-            return HttpResponse(json.dumps(data), content_type='application/json', status=200)
+        def get(self, request, contact_id=None, **kwargs):
+            json_serializer = serializers.get_serializer('json')()
+            if contact_id:
+                contacts = json_serializer.serialize(Contact.objects.filter(pk=contact_id))
+            else:
+                contacts = json_serializer.serialize(Contact.objects.all())
+            return HttpResponse(contacts, content_type='application/json', status=200)
 
         @login_required
         def post(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            name = request.POST.get('name', '')
-            db[name] = True
-            db.sync()
-            db.close()
+            Contact.objects.create(
+                fname=request.POST.get('fname'),
+                lname=request.POST.get('lname'),
+                phone_number=request.POST.get('phone_number'))
             return HttpResponse(status=201)
 
         @admin_required
-        def delete(self, request, name):
-            db = shelve.open('/tmp/db')
-            if not db.has_key(str(name)):
-                db.close()
-                raise HttpError('Name does not exist', status=404)
-            del(db[name])
-            db.sync()
-            db.close()
+        def delete(self, request, contact_id):
+            contact = Contact.objects.get(pk=contact_id)
+            contact.delete()
             return HttpResponse(status=200)
 
-Assuming that we don't mind if anyone sees our collection of names, we can leave that one as is, but let's assume that we have strict requirements for who can add and delete names. Assuming that only registered users can add names, we add the ``login_required`` decorator to the ``post`` method. We don't mind if any our members add new names, but we don't want a name to be accidentally deleted from our database, so let's decorate that one differently with the ``admin_required`` decorator. ``admin_required`` simply makes sure that the user is logged in and is a super user before they will be granted access to the view function.
+Assuming that we don't mind if anyone sees our collection of contacts, we can leave ``get`` method as is, but let's assume that we have strict requirements for who can add and delete contacts. Assuming that only registered users can add contacts, we add the ``login_required`` decorator to the ``post`` method. We don't mind if any our members add new contacts, but we don't want a contact to be accidentally deleted from our database, so let's decorate that one differently with the ``admin_required`` decorator. ``admin_required`` simply makes sure that the user is logged in and is also a super user before they will be granted access to the decorated view method.
 
-Now, this can get a bit tedious if we have lots of resources and they all tend to have the same authentication requirements. So, the authentication decorators work on both classes and methods. In the example below we're adding a superuser requirement to every method offered by the resource simply by decorating the resource class::
+Now, this can get a bit tedious if we have lots of resources and they all tend to have the same authentication requirements. To make a little less tedious, the authentication decorators work on both classes and methods. In the example below we're adding a superuser requirement to every method offered by the resource simply by decorating the resource class::
 
-    # ===================
+    # ====================
     # phonebook/views.py
-    # ===================
-
-    import shelve
-    import json
+    # ====================
 
     from django.http import HttpResponse
+    from django.core import serializers
 
-    from rest import Resource
-    from rest.exceptions import HttpError
-    from rest.auth.decorators import admin_required
+    from simple_rest import Resource
+    from simple_rest.auth.decorators import admin_required
+
+    from .models import Contact
 
 
     @admin_required
-    class MyResource(Resource):
+    class Contacts(Resource):
 
-        def get(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            data = dict(db)
-            db.close()
-            return HttpResponse(json.dumps(data), content_type='application/json', status=200)
+        def get(self, request, contact_id=None, **kwargs):
+            json_serializer = serializers.get_serializer('json')()
+            if contact_id:
+                contacts = json_serializer.serialize(Contact.objects.filter(pk=contact_id))
+            else:
+                contacts = json_serializer.serialize(Contact.objects.all())
+            return HttpResponse(contacts, content_type='application/json', status=200)
 
         def post(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            name = request.POST.get('name', '')
-            db[name] = True
-            db.sync()
-            db.close()
+            Contact.objects.create(
+                fname=request.POST.get('fname'),
+                lname=request.POST.get('lname'),
+                phone_number=request.POST.get('phone_number'))
             return HttpResponse(status=201)
 
-        def delete(self, request, name):
-            db = shelve.open('/tmp/db')
-            if not db.has_key(str(name)):
-                db.close()
-                raise HttpError('Name does not exist', status=404)
-            del(db[name])
-            db.sync()
-            db.close()
+        def delete(self, request, contact_id):
+            contact = Contact.objects.get(pk=contact_id)
+            contact.delete()
             return HttpResponse(status=200)
 
-Before we leave the topic of authentication decorators there are two more items I'd like to point out. First, another good reason for using the framework's authentication decorators whenever possible is that when authentication fails they return the correct response from a RESTful point of view. The typical Django authentication decorators will try to redirect the user to the login page. While this is great when you're on a webpage, when accessing the resource from any other type of client, receiving a 401 (Unauthorized) is the preferred response and the one that is returned when using Simple REST authentication decorators.
+Before we leave the topic of authentication decorators there are two more items to take a look at.
 
-The other item I want to mention is the ``signature_required`` authentication decorator. Many APIs use a secure signature to identify a user and so we've added an authentication decorator that will add that functionality to your resources. The ``signature_required`` decorator will expect that an `HMAC`_, as defined by `RFC 2104`_, is sent with the HTTP request in order to authenticate the user. An HMAC is built around a user's secret key and so there needs to be a way for the ``signature_required`` decorator to get that secret key and that is done by providing the decorator with a function that takes a Django `HttpRequest`_ object and any number of positional and keyword arguments as defined by the URLconf. Let's take a look at an example of using the ``signature_required`` decorator with our sample resource code::
+First, when using the framework's authentication decorators, the correct RESTful response is returned whenever authentication fails. The typical Django authentication decorators will try to redirect the user to the login page. While this is great when you're on a webpage, when accessing the resource from any other type of client, receiving a 401 (Unauthorized) is the preferred response and the one that is returned when using Simple REST authentication decorators. For that reason alone, you should prefer the Simple REST authentication decorators over Django's built in ones when creating a RESTful API.
 
-    # ===================
+The other item to discuss is the ``signature_required`` authentication decorator. Many APIs use a secure signature to identify and the Simple REST framework provides an authentication decorator that you can use to add that functionality to your resources. The ``signature_required`` decorator will expect that an `HMAC`_, as defined by `RFC 2104`_, is sent with the HTTP request in order to authenticate the user. An HMAC is built around a user's secret key and so there needs to be a way for the ``signature_required`` decorator to get that secret key and that is done by providing the decorator with a function that takes a Django `HttpRequest`_ object and any number of positional and keyword arguments as defined by the URLconf. Let's take a look at an example of using the ``signature_required`` decorator with our sample resource code::
+
+    # ====================
     # phonebook/views.py
-    # ===================
-
-    import shelve
-    import json
+    # ====================
 
     from django.http import HttpResponse
+    from django.core import serializers
 
-    from rest import Resource
-    from rest.exceptions import HttpError
-    from rest.auth.decorators import signature_required
+    from simple_rest import Resource
+    from simple_rest.auth.decorators import signature_required
+
+    from .models import Contact
+
 
     def secret_key(request, *args, **kwargs):
-        user = User.objects.get(pk=kwargs.get('uid'))
-        return user.secret_key
+        return 'test'
 
     @signature_required(secret_key)
-    class MyResource(Resource):
+    class Contacts(Resource):
 
-        def get(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            data = dict(db)
-            db.close()
-            return HttpResponse(json.dumps(data), content_type='application/json', status=200)
+        def get(self, request, contact_id=None, **kwargs):
+            json_serializer = serializers.get_serializer('json')()
+            if contact_id:
+                contacts = json_serializer.serialize(Contact.objects.filter(pk=contact_id))
+            else:
+                contacts = json_serializer.serialize(Contact.objects.all())
+            return HttpResponse(contacts, content_type='application/json', status=200)
 
         def post(self, request, *args, **kwargs):
-            db = shelve.open('/tmp/db')
-            name = request.POST.get('name', '')
-            db[name] = True
-            db.sync()
-            db.close()
+            Contact.objects.create(
+                fname=request.POST.get('fname'),
+                lname=request.POST.get('lname'),
+                phone_number=request.POST.get('phone_number'))
             return HttpResponse(status=201)
 
-        def delete(self, request, name):
-            db = shelve.open('/tmp/db')
-            if not db.has_key(str(name)):
-                db.close()
-                raise HttpError('Name does not exist', status=404)
-            del(db[name])
-            db.sync()
-            db.close()
+        def delete(self, request, contact_id):
+            contact = Contact.objects.get(pk=contact_id)
+            contact.delete()
             return HttpResponse(status=200)
 
-There's also another decorator called ``auth_required`` that works in the same manner as the ``signature_required`` (meaning that it takes a function that returns a secret key as well) but that requires that the user is either logged in or has a valid signature before granting them access to the resource.
+The ``signature_required`` decorator takes one argument, a function that, when called with an HttpRequest object and any number of positional and keyword arguments as defined by the URLconf entry for the resource, will return a string representing the secret key for the user making the request. In the example above, we created a function that returns the string 'test' no matter what arguments are passed into the function. Obviously, you don't want to use a secret key function like this in production, but for our purposes it will suffice.
 
-Finally, if you're using the ``signature_required`` or ``auth_required`` decorator in your code and need a little extra help debugging your resources, specifically you need help generating a secure signature, Simple REST provides a custom command called ``urlencode`` that takes a set of data as key/value pairs and an optional secret key and returns a URL encoded string that you can copy and paste directly into a cURL command or other helpful tool such as the `REST Console`_ for Chrome. An example of how to use the ``urlencode`` command is listed below::
+To test out the ``signature_required`` decorator, you can hit any of the URLs for the Contacts resource with a ``t`` value representing a UTC POSIX timestamp for the current time and a ``sig`` value representing the HMAC signature generated from the data being sent, the timestamp, and the secret key (in this case, 'test'). If you've added 'simple_rest' to your list of ``INSTALLED_APPS``, you can use the handy ``urlencode`` command to calculate the signature and timestamp for testing your resources. The command line below shows how to generate the timestamp and signature values for a simple GET request. To test the GET call, just enter the line below into your command line and copy and paste the response to the querystring part of the URL::
 
-    % python manage.py urlencode --secret-key=test foo=1 bar=2 baz=3 name='Maxwell Hammer'
+    % manage.py urlencode --secret-key=test
+
+To URL encode the request body as well, just include each piece of data as a key=value pair in the call to the ``urlencode`` command. As an example of how to do so, let's test the ``POST`` call. Run the following command in your terminal and copy the results into either the request body or the querystring portion of the URL::
+
+    % manage.py urlencode --secret-key fname=Winston lname=Smith phone_number=555-555-5555
+
+Finally, there's one more decorator called ``auth_required`` that works in the same manner as the ``signature_required`` (meaning that it takes a function that returns a secret key as well) but that requires that the user is either logged in or has a valid signature before granting them access to the resource.
 
 ###############
 Form Validation
