@@ -569,7 +569,8 @@ Using the `_format` override attribute is easy, simply add the attribute to the 
         url(r'^contacts(\.(?P<_format>[a-zA-Z]+))?/?$', Contacts.as_view()),
 
         # # Allow access to a single contact resource
-        url(r'^contacts/(?P<contact_id>[0-9]+)(\.(?P<_format>[a-zA-Z]+))?/?$', Contacts.as_view()),
+        url(r'^contacts/(?P<contact_id>[0-9]+)(\.(?P<_format>[a-zA-Z]+))?/?$',
+            Contacts.as_view()),
     )
 
 Keep in mind that the example above will be passing a new keyword argument into your view methods, so you'll need to make sure that the last parameter on your view methods is the catch all parameter for keyword arguments (`**kwargs`).
