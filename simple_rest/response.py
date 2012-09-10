@@ -81,14 +81,15 @@ class RESTfulResponse(object):
                 else:
                     data, status_code = results, 200
 
-                response = self.render_to_response(request, data, status_code)
+                response = self.render_to_response(request, data, status_code, kwargs.get('_format', None))
                 return response
             return wrapper
         return wrap_object(view_obj, decorator)
 
-    def render_to_response(self, request, data=None, status=200):
+    def render_to_response(self, request, data=None, status=200, format=None):
+        format = request.REQUEST.get('_format', None) or format
         mimetype = mimeparse.best_match(self.supported_mimetypes.keys(), request.META['HTTP_ACCEPT'])
-        mimetype = mimetypes.guess_type(request.path_info.rstrip('/'))[0] or mimetype
+        mimetype = mimetypes.guess_type('placeholder_filename.%s' % format)[0] or mimetype
         content_type = '%s; charset=%s' % (mimetype, settings.DEFAULT_CHARSET)
 
         templ_or_func = self.supported_mimetypes.get(mimetype)

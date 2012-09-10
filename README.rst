@@ -552,7 +552,9 @@ Once we've got the template created, we just need to create a new RESTfulRespons
             contact.delete()
             return None, 200
 
-With the new changes in place, you can get either XML or JSON just by changing the Accept header in your request. The only problem with this scenario though is that you can't always simply change the Accept header. For example, a simple HTML form (no JavaScript) will always send a request with Accept headers set to HTML (or XHTML) and probably some form of XML. If you want to specify the format of the response, and you don't have access to the Accept header for whatever reason, you can simply append a file extension to the URL. The Simple REST framework will accept a file extension on the URL and use it to determine the response, otherwise, if no file extension is present, it will return the requested format according to the Accept header. The only thing we need to do is alter our URL patterns to accept an optional file extension. The newly altered ``phonebook/urls.py`` file can be seen below::
+With the new changes in place, you can get either XML or JSON just by changing the Accept header in your request. The only problem with this scenario though is that you can't always simply change the Accept header. For example, a simple HTML form (no JavaScript) will always send a request with Accept headers set to HTML (or XHTML) and probably some form of XML. If you want to specify the format of the response, and you don't have access to the Accept header, you can either append a file extension to the URL or pass a `_format` attribute in the request's querystring or message body. If either a file extension or an override attribute is used, the response format will be determined using it, otherwise, if neither is present, it will fallback on the Accept header to determine the requested format.
+
+Using the `_format` override attribute is easy, simply add the attribute to the HTTP call in either the querystring or the message body and it just works. there's absolutely nothing that needs to be done on the backend to get the override attribute working. If, on the other hand, you want to use the file extension override, you will need to alter your URL patterns to accept an optional named pattern. The name you should use for the optional file extenstion is the same as the name for the override attribute. The example below shows the newly altered ``phonebook/urls.py`` file with the optional file extension::
 
     # ===================
     # phonebook/urls.py
@@ -564,15 +566,15 @@ With the new changes in place, you can get either XML or JSON just by changing t
 
     urlpatterns = patterns('',
         # Allow access to the contacts resource collection
-        url(r'^contacts(\.(?P<format>[a-zA-Z]+))?/?$', Contacts.as_view()),
+        url(r'^contacts(\.(?P<_format>[a-zA-Z]+))?/?$', Contacts.as_view()),
 
         # # Allow access to a single contact resource
-        url(r'^contacts/(?P<contact_id>[0-9]+)(\.(?P<format>[a-zA-Z]+))?/?$', Contacts.as_view()),
+        url(r'^contacts/(?P<contact_id>[0-9]+)(\.(?P<_format>[a-zA-Z]+))?/?$', Contacts.as_view()),
     )
 
-In the example above, we've added a new portion to our regular expression that checks for an optional file extension. In the example, we give it the name ``format``, but this is completely optional. You can name it whatever you like or not name it all. The only reason the code sample above has a name is to make sure that it doesn't end up getting passed into the GET method as the value for ``contact_id`` when the first URL pattern is matched.
+Keep in mind that the example above will be passing a new keyword argument into your view methods, so you'll need to make sure that the last parameter on your view methods is the catch all parameter for keyword arguments (`**kwargs`).
 
-With the addition above made to the URLconf, you can now request differnt response formats using either a file extension on the URL or by specifying the desired format in the Accept header. The file extension takes precedence, but either should work.
+With the addition above made to the URLconf, you can now request differnt response formats using either a file extension on the URL, a `_format` attribute in querystring or message body, or by specifying the desired format in the Accept header. The order of precedence is override attribute, then file extension, and finally the HTTP Accept header.
 
 
 .. _Tastypie: http://tastypieapi.org/
