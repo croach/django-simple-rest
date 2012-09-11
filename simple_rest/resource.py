@@ -1,5 +1,8 @@
+from django.http import HttpResponse
 from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
+
+from .exceptions import HttpError
 
 
 class Resource(View):
@@ -33,4 +36,16 @@ class Resource(View):
         if request.method not in ['POST', 'GET']:
             setattr(request, request.method, request.POST)
 
-        return super(Resource, self).dispatch(request, *args, **kwargs)
+        # Check for an HttpError when executing the view. If one was returned,
+        # get the message and status code and return it, otherwise, let any
+        # other type of exception bubble up or return the response if no error
+        # occurred.
+        try:
+            response = super(Resource, self).dispatch(request, *args, **kwargs)
+        except HttpError, e:
+            if e.message:
+                response = HttpResponse(e.message, status=e.status)
+            else:
+                response = HttpResponse(status=e.status)
+
+        return response

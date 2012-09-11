@@ -11,6 +11,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models.query import QuerySet
 
 from .utils.decorators import wrap_object
+from .exceptions import HttpError
 
 try:
     import simplejson as json
@@ -60,7 +61,13 @@ class RESTfulResponse(object):
     def __call__(self, view_obj):
         def decorator(view_func):
             def wrapper(request, *args, **kwargs):
-                results = view_func(request, *args, **kwargs)
+                try:
+                    results = view_func(request, *args, **kwargs)
+                except HttpError, e:
+                    results = (
+                        hasattr(e, 'message') and {'error': e.message} or None,
+                        e.status
+                    )
 
                 # TODO: What should be done about a resource that returns a normal
                 #       Django HttpResponse? Right now, if an HttpResponse is
@@ -98,22 +105,13 @@ class RESTfulResponse(object):
         if not templ_or_func:
             return HttpResponse(status=415)
 
-        if isinstance(templ_or_func, str):
-            def serialize(data):
-                if data is not None:
-                    context = { 'context': data }
-                    response = render_to_response(templ_or_func, context)
-                else:
-                    response = HttpResponse()
-                response['Content-Type'] = content_type
-                response.status_code = status
-                return response
+        if data is None:
+            response = HttpResponse()
+        elif isinstance(templ_or_func, str):
+            response = render_to_response(templ_or_func, {'context': data})
         else:
-            def serialize(data):
-                if data is not None:
-                    response = HttpResponse(templ_or_func(data), content_type=content_type, status=status)
-                else:
-                    response = HttpResponse(content_type=content_type, status=status)
-                return response
+            response = HttpResponse(templ_or_func(data))
 
-        return serialize(data)
+        response['Content-Type'] = content_type
+        response.status_code = status
+        return response
