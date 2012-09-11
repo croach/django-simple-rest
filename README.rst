@@ -359,7 +359,7 @@ Once, you've updated the ``models.py`` file, either delete and rerun ``syncdb`` 
             return HttpResponse(contacts, content_type='application/json', status=200)
 
         def post(self, request, *args, **kwargs):
-            form = ContactForm(request.POST.copy())
+            form = ContactForm(request.POST)
             if not form.is_valid():
                 return HttpResponse(status=409)
             form.save()
@@ -416,7 +416,7 @@ The first example below shows the absolute simplest way to use the ``RESTfulResp
             return contacts
 
         def post(self, request, *args, **kwargs):
-            form = ContactForm(request.POST.copy())
+            form = ContactForm(request.POST)
             if not form.is_valid():
                 return HttpResponse(status=409)
             form.save()
@@ -466,7 +466,7 @@ In the example above we only decorated the ``get`` method, but an instance of RE
             return contacts
 
         def post(self, request, *args, **kwargs):
-            form = ContactForm(request.POST.copy())
+            form = ContactForm(request.POST)
             if not form.is_valid():
                 return HttpResponse(status=409)
             form.save()
@@ -538,7 +538,7 @@ Once we've got the template created, we just need to create a new RESTfulRespons
             return contacts
 
         def post(self, request, *args, **kwargs):
-            form = ContactForm(request.POST.copy())
+            form = ContactForm(request.POST)
             if not form.is_valid():
                 return HttpResponse(status=409)
             form.save()
