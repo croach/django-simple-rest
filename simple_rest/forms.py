@@ -31,6 +31,11 @@ class ModelForm(DjangoModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ModelForm, self).__init__(*args, **kwargs)
+
+        # Make sure the data is editable and that we are not altering the
+        # original object
+        self.data = dict(self.data)
+
         for field in self.instance.__class__._meta.fields:
             if field.name not in self.data.keys() or self.data.get(field.name) == None:
                 inst_val = None
