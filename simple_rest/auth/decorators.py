@@ -4,6 +4,7 @@ from django.http import HttpResponse
 
 from .signature import calculate_signature
 from ..utils.decorators import wrap_object
+from ..exceptions import HttpError
 
 
 def auth_required(secret_key_func):
@@ -67,9 +68,9 @@ def request_passes_test(test_func, message=None, status=401):
     """
     def decorator(view_func):
         def _wrapped_view(request, *args, **kwargs):
-            if test_func(request, *args, **kwargs):
-                return view_func(request, *args, **kwargs)
-            return HttpResponse(message=message, status=status)
+            if not test_func(request, *args, **kwargs):
+                raise HttpError(message=message, status=status)
+            return view_func(request, *args, **kwargs)
         return _wrapped_view
     return decorator
 
