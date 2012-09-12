@@ -65,7 +65,7 @@ class RESTfulResponse(object):
                     results = view_func(request, *args, **kwargs)
                 except HttpError, e:
                     results = (
-                        hasattr(e, 'message') and {'error': e.message} or None,
+                        e.message and {'error': e.message} or None,
                         e.status
                     )
 
