@@ -298,7 +298,24 @@ To URL encode the request body as well, just include each piece of data as a key
 
     % manage.py urlencode --secret-key fname=Winston lname=Smith phone_number=555-555-5555
 
-Finally, there's one more decorator called ``auth_required`` that works in the same manner as the ``signature_required`` (meaning that it takes a function that returns a secret key as well) but that requires that the user is either logged in or has a valid signature before granting them access to the resource.
+Simple REST provides one more decorator that's sort of a mashup of two other decorators. The decorator ``auth_required`` works in the same manner as the ``signature_required`` (meaning that it takes a function that returns a secret key) but it requires that the user is either logged in or has a valid signature before granting them access to the resource.
+
+Finally, you can create your own authentication decorators with relative ease. The Simple REST framework provides two functions to help out with this task. First, the ``request_passes_test`` function can be used to create a new decorator function. Then the ``wrap_object`` function can be used to properly decorate either an entire class or a specific method within. The code below shows a sample of how you would create a decorator that makes sure a user has the proper permission to access a resource::
+
+    from simple_rest.auth.decorators import request_passes_test
+    from simple_rest.utils.decorators import wrap_object
+
+
+    def has_permission(request, *args, **kwargs):
+        return False # Make sure the user has the proper permission here
+
+    def permission_required(obj):
+        decorator = request_passes_test(has_permission,
+            message="You don't have permission to access this resource",
+            status=403
+        )
+        return wrap_object(obj, decorator)
+
 
 ###############
 Form Validation
