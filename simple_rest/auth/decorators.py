@@ -23,7 +23,7 @@ def auth_required(secret_key_func):
     return actual_decorator
 
 
-def login_required(obj):  # TODO: Add the redirect_field_name and login_url fields
+def login_required(obj):
     """
     Requires that the user be logged in order to gain access to the resource
     at the specified the URI.
@@ -57,7 +57,7 @@ def signature_required(secret_key_func):
     return actual_decorator
 
 
-def request_passes_test(test_func):
+def request_passes_test(test_func, message=None, status=401):
     """
     Decorator for resources that checks that the request passes the given test.
     If the request fails the test a 401 (Unauthorized) response is returned,
@@ -69,7 +69,7 @@ def request_passes_test(test_func):
         def _wrapped_view(request, *args, **kwargs):
             if test_func(request, *args, **kwargs):
                 return view_func(request, *args, **kwargs)
-            return HttpResponse(status=401)
+            return HttpResponse(message=message, status=status)
         return _wrapped_view
     return decorator
 
