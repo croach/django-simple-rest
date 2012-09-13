@@ -396,7 +396,9 @@ A key factor to having a truly RESTful API is the decoupling of your resources f
 
 The Simple Rest framework provides a mechanism by which you can add content negotiation to your resources. This functionality is provided in the `RESTfulResponse`_ class. The ``RESTfulResponse`` class is an implementation of the method described by James Bennett in his article "`Another take on content negotiation`_". The way it works is simple, create an instance of the class and use it as a decorator on your resource. The rest of this section will take a look at a few examples to show the different options available to you when using the ``RESTfulResonse`` class to provide multiple representations of your resource.
 
-The first example below shows the absolute simplest way to use the ``RESTfulResponse`` class to provide a JSON only representation of a resource. JSON is one of the most popular resource representations (arguably the most popular, at least for APIs being created today) and, as a result, the ``RESTfulResponse`` class provides support for it by default. So, to provide a JSON representation of your resource using the RESTfulResponse class, you simply create an instance of it and decorate your resource just like the example shows below::
+The first example below shows the absolute simplest way to use the ``RESTfulResponse`` class. By default, the RESTfulResponse provides both JSON and HTML formats. JSON is one of the most popular resource representations (arguably the most popular, at least for APIs being created today) and so the ``RESTfulResponse`` class provides support for right out of the box. The HTML format is mainly provided to make it easy to view the data in a browser and also to allow the `Django Debug Toolbar`_ to function properly when testing RESTful APIs.
+
+To provide a JSON representation of your resource using the RESTfulResponse class, you simply create an instance of it and decorate your resource just like the example shows below::
 
     # ====================
     # phonebook/views.py
@@ -604,3 +606,4 @@ With the addition above made to the URLconf, you can now request differnt respon
 .. _content negotation: http://en.wikipedia.org/wiki/Content_negotiation
 .. _Another take on content negotiation: http://www.b-list.org/weblog/2008/nov/29/multiresponse/
 .. _RESTFulResponse: https://raw.github.com/freshplum/django-simple-rest/master/simple_rest/response.py
+.. _Django Debug Toolbar: https://github.com/django-debug-toolbar/django-debug-toolbar

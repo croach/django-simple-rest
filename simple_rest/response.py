@@ -6,30 +6,15 @@ import mimeparse
 from django.conf import settings
 from django.shortcuts import render_to_response
 from django.http import HttpResponse
-from django.core import serializers
-from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models.query import QuerySet
 
 from .utils.decorators import wrap_object
 from .exceptions import HttpError
-
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from .utils.serializers import to_json, to_html
 
 
-def serialize_json(content):
-    if isinstance(content, QuerySet):
-        json_serializer = serializers.get_serializer('json')()
-        serialized_content = json_serializer.serialize(content, ensure_ascii=False)
-    else:
-        serialized_content = json.dumps(content, cls=DjangoJSONEncoder, ensure_ascii=False)
-    return serialized_content
-
-DEFAULT_MIMETYPE = 'application/json'
 SUPPORTED_MIMETYPES = {
-    'application/json': serialize_json
+    'application/json': to_json,
+    'text/html': to_html
 }
 
 
