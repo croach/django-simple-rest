@@ -14,7 +14,7 @@ class Resource(View):
         # dict if there is any present
         method = request.method
         request.method = 'POST'
-        request._load_post_and_files
+        request._load_post_and_files()
 
         # Now that message body has been loaded, check for a method override
         method_override = None
