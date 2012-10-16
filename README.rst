@@ -396,7 +396,7 @@ A key factor to having a truly RESTful API is the decoupling of your resources f
 
 The Simple Rest framework provides a mechanism by which you can add content negotiation to your resources. This functionality is provided in the `RESTfulResponse`_ class. The ``RESTfulResponse`` class is an implementation of the method described by James Bennett in his article "`Another take on content negotiation`_". The way it works is simple, create an instance of the class and use it as a decorator on your resource. The rest of this section will take a look at a few examples to show the different options available to you when using the ``RESTfulResonse`` class to provide multiple representations of your resource.
 
-The first example below shows the absolute simplest way to use the ``RESTfulResponse`` class. By default, the RESTfulResponse provides both JSON and HTML formats. JSON is one of the most popular resource representations (arguably the most popular, at least for APIs being created today) and so the ``RESTfulResponse`` class provides support for right out of the box. The HTML format is mainly provided to make it easy to view the data in a browser and also to allow the `Django Debug Toolbar`_ to function properly when testing RESTful APIs. The HTML representation will format the data as JSON and, if you have `pygments`_ installed, the data will syntax highlighted as well.
+The first example below shows the absolute simplest way to use the ``RESTfulResponse`` class. By default, the RESTfulResponse provides JSON, HTML, and plain text formats. JSON is one of the most popular resource representations (arguably the most popular, at least for APIs being created today) and so the ``RESTfulResponse`` class provides support for it right out of the box. The HTML format is mainly provided to make it easy to view the data in a browser and also to allow the `Django Debug Toolbar`_ to function properly when testing RESTful APIs. The HTML representation will format the data as JSON and, if you have `pygments`_ installed, the data will syntax highlighted as well.
 
 To provide a JSON representation of your resource using the RESTfulResponse class, you simply create an instance of it and decorate your resource just like the example shows below::
 
@@ -518,7 +518,7 @@ Now we just need to add some XML/code to turn our response data into proper XML.
     </phonebook>
     {% endwith %}
 
-Once we've got the template created, we just need to create a new RESTfulResponse decorator with the correct mime type mapped to the template. The code below shows how to do that; keep in mind that JSON is the default, so our mime type mapping dict doesn't need to contain an entry for JSON::
+Once we've got the template created, we just need to create a new RESTfulResponse decorator with the correct mime type mapped to the template. The code below shows how to do that by passing a dictionary that maps supported mimetypes to either a function or a template filename. The RESTFulResponse class also inherits from the `collections.MutableMapping<http://bit.ly/TXcyXV>`_ Abstract Base Class, so you could have just as easily added the mimetype to function/template mapping like you would with any ordinary python dict. Also keep in mind that JSON, HTML, and plain text are provided by default, so our mime type mapping dict doesn't need to contain an entry for any of those--- unless you want to override the default behavior::
 
     # ====================
     # phonebook/views.py
@@ -538,6 +538,10 @@ Once we've got the template created, we just need to create a new RESTfulRespons
         return 'test'
 
     json_or_xml = RESTfulResponse({'application/xml': 'phonebook.xml'})
+    # Since RESTfulResponse inherits from collections.MutableMapping, we could
+    # have also done the following instead of passing a dict to the constructor
+    # json_or_xml = RESTfulResponse()
+    # json_or_xml['application/xml'] = 'phonebook.xml'
 
 
     class ContactForm(ModelForm):

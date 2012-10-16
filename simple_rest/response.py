@@ -12,14 +12,14 @@ from .exceptions import HttpError
 from .utils.serializers import to_json, to_html, to_text
 
 
-SUPPORTED_MIMETYPES = {
+DEFAULT_MIMETYPES = {
     'application/json': to_json,
     'text/html': to_html,
     'text/plain': to_text
 }
 
 
-class RESTfulResponse(object):
+class RESTfulResponse(collections.MutableMapping, collections.Callable):
     """
     Can be used as a decorator or an instance to properly formatted content
 
@@ -40,9 +40,31 @@ class RESTfulResponse(object):
     information.
     """
     def __init__(self, mimetype_mapping=None):
-        self.supported_mimetypes = SUPPORTED_MIMETYPES.copy()
+        self._mimetypes = {}
         if mimetype_mapping:
-            self.supported_mimetypes.update(mimetype_mapping)
+            self._mimetypes.update(mimetype_mapping)
+
+    def __len__(self):
+        return len(self.keys())
+
+    def __iter__(self):
+        for key in self.keys():
+            yield key
+
+    def __getitem__(self, mimetype):
+        if mimetype in self._mimetypes:
+            return self._mimetypes[mimetype]
+        else:
+            return DEFAULT_MIMETYPES[mimetype]
+
+    def __setitem__(self, mimetype, func_or_templ):
+        self._mimetypes[mimetype] = func_or_templ
+
+    def __delitem__(self, mimetype):
+        del self._mimetypes[mimetype]
+
+    def keys(self):
+        return list(set(self._mimetypes.keys()) | set(DEFAULT_MIMETYPES.keys()))
 
     def __call__(self, view_obj):
         def decorator(view_func):
@@ -81,11 +103,11 @@ class RESTfulResponse(object):
 
     def render_to_response(self, request, data=None, status=200, format=None):
         format = request.REQUEST.get('_format', None) or format
-        mimetype = mimeparse.best_match(self.supported_mimetypes.keys(), request.META['HTTP_ACCEPT'])
+        mimetype = mimeparse.best_match(self.keys(), request.META['HTTP_ACCEPT'])
         mimetype = mimetypes.guess_type('placeholder_filename.%s' % format)[0] or mimetype
         content_type = '%s; charset=%s' % (mimetype, settings.DEFAULT_CHARSET)
 
-        templ_or_func = self.supported_mimetypes.get(mimetype)
+        templ_or_func = self.get(mimetype)
 
         # If a template or function isn't found, return a 415 (unsupportted media type) response
         if not templ_or_func:
