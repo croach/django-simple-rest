@@ -130,7 +130,7 @@ The sample code below shows one example of how we could create a simple resource
             contact.delete()
             return HttpResponse(status=200)
 
-In the example code above, we imported the ``Resource`` class, which simply inherits from Django's ``View`` class and provides the extra sauce to get all of the HTTP methods working properly. Then, we create a new class that inherits from the ``Resource`` class, and we add a function for each HTTP method that we want to handle. The only requirement is that the function name must match the HTTP method name and be in all lower case letters, so ``get``for a GET call and so forth.
+In the example code above, we imported the ``Resource`` class, which simply inherits from Django's ``View`` class and provides the extra sauce to get all of the HTTP methods working properly. Then, we create a new class that inherits from the ``Resource`` class, and we add a function for each HTTP method that we want to handle.The only requirement is that the function name must match the HTTP method name and be in all lower case letters, so ``get`` for a GET call and so forth.
 
 Notice that in the ``post`` method, the data for the message body of the request can be accessed through the ``request.POST`` ``QueryDict`` object. Since all exsiting browsers can only handle GET and POST requests, having ``QueryDict``s for GET and POST were all that were needed in the past and so those were all that Django has historically provided. However, with a RESTful API, the server can receive requests using any HTTP method. As a result, the message body for a request can be found in the corresponding ``QueryDict`` on the ``request`` object. For example, if a PUT request is made, the message body data can be accessed through the ``request.PUT`` ``QueryDict``.
 
@@ -518,7 +518,7 @@ Now we just need to add some XML/code to turn our response data into proper XML.
     </phonebook>
     {% endwith %}
 
-Once we've got the template created, we just need to create a new RESTfulResponse decorator with the correct mime type mapped to the template. The code below shows how to do that by passing a dictionary that maps supported mimetypes to either a function or a template filename. The RESTFulResponse class also inherits from the `collections.MutableMapping<http://bit.ly/TXcyXV>`_ Abstract Base Class, so you could have just as easily added the mimetype to function/template mapping like you would with any ordinary python dict. Also keep in mind that JSON, HTML, and plain text are provided by default, so our mime type mapping dict doesn't need to contain an entry for any of those--- unless you want to override the default behavior::
+Once we've got the template created, we just need to create a new RESTfulResponse decorator with the correct mime type mapped to the template. The code below shows how to do that by passing a dictionary that maps supported mimetypes to either a function or a template filename. The RESTFulResponse class also inherits from the `collections.MutableMapping <http://bit.ly/TXcyXV>`_ Abstract Base Class, so you could have just as easily added the mimetype to function/template mapping like you would with any ordinary python dict. Also keep in mind that JSON, HTML, and plain text are provided by default, so our mime type mapping dict doesn't need to contain an entry for any of those---unless you want to override the default behavior::
 
     # ====================
     # phonebook/views.py
