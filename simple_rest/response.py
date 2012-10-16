@@ -9,12 +9,13 @@ from django.http import HttpResponse
 
 from .utils.decorators import wrap_object
 from .exceptions import HttpError
-from .utils.serializers import to_json, to_html
+from .utils.serializers import to_json, to_html, to_text
 
 
 SUPPORTED_MIMETYPES = {
     'application/json': to_json,
-    'text/html': to_html
+    'text/html': to_html,
+    'text/plain': to_text
 }
 
 

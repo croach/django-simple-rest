@@ -77,4 +77,18 @@ def to_html(data):
         html = base_html_template.render(c)
     return html
 
+def to_text(data):
+    """
+    Serializes a python object as plain text
+
+    If the data can be serialized as JSON, this method will use the to_json
+    method to format the data, otherwise the data is returned as is.
+    """
+    try:
+        serialized_content = to_json(data, indent=4)
+    except Exception, e:
+        serialized_content = data
+    return serialized_content
+
+
 
