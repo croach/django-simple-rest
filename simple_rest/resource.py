@@ -43,9 +43,6 @@ class Resource(View):
         try:
             response = super(Resource, self).dispatch(request, *args, **kwargs)
         except HttpError, e:
-            if e.message:
-                response = HttpResponse(e.message, status=e.status)
-            else:
-                response = HttpResponse(status=e.status)
+            response = HttpResponse(status=e.status)
 
         return response
