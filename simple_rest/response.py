@@ -103,7 +103,7 @@ class RESTfulResponse(collections.MutableMapping, collections.Callable):
 
     def render_to_response(self, request, data=None, status=200, format=None):
         format = request.REQUEST.get('_format', None) or format
-        mimetype = mimeparse.best_match(self.keys(), request.META['HTTP_ACCEPT'])
+        mimetype = mimeparse.best_match(self.keys(), request.META.get('HTTP_ACCEPT', ''))
         mimetype = mimetypes.guess_type('placeholder_filename.%s' % format)[0] or mimetype
         content_type = '%s; charset=%s' % (mimetype, settings.DEFAULT_CHARSET)
 
