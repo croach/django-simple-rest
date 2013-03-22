@@ -34,7 +34,10 @@ class ModelForm(DjangoModelForm):
 
         # Make sure the data is editable and that we are not altering the
         # original object
-        self.data = dict(self.data)
+        data = {}
+        for k, v in self.data.items():
+            data[k] = v
+        self.data = data
 
         for field in self.instance.__class__._meta.fields:
             if field.name not in self.data.keys() or self.data.get(field.name) == None:
@@ -51,4 +54,3 @@ class ModelForm(DjangoModelForm):
                     self.data[field.name] = inst_val
                 elif field.default != NOT_PROVIDED:
                     self.data[field.name] = field.default
-
