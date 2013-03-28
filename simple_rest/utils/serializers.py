@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models.query import QuerySet
@@ -22,6 +23,13 @@ except ImportError:
     import json
 
 
+class DecimalEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return DjangoJSONEncoder.default(self, obj)
+
+
 def to_json(content, indent=None):
     """
     Serializes a python object as JSON
@@ -34,7 +42,7 @@ def to_json(content, indent=None):
         json_serializer = serializers.get_serializer('json')()
         serialized_content = json_serializer.serialize(content, ensure_ascii=False, indent=indent)
     else:
-        serialized_content = json.dumps(content, cls=DjangoJSONEncoder, ensure_ascii=False, indent=indent)
+        serialized_content = json.dumps(content, cls=DecimalEncoder, ensure_ascii=False, indent=indent)
     return serialized_content
 
 
