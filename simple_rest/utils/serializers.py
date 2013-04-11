@@ -42,7 +42,11 @@ def to_json(content, indent=None):
         json_serializer = serializers.get_serializer('json')()
         serialized_content = json_serializer.serialize(content, ensure_ascii=False, indent=indent)
     else:
-        serialized_content = json.dumps(content, cls=DecimalEncoder, ensure_ascii=False, indent=indent)
+        try:
+            serialized_content = json.dumps(content, cls=DecimalEncoder, ensure_ascii=False, indent=indent)
+        except TypeError:
+            # Fix for Django 1.5
+            serialized_content = json.dumps(content, ensure_ascii=False, indent=indent)
     return serialized_content
 
 
