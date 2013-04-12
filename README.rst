@@ -14,7 +14,7 @@ Installation
 
 2. Add the package to the list of installed apps (optional):
 
-   - ``INSTALLED_APPS += ['simple-rest']``
+   - ``INSTALLED_APPS += ['simple_rest']``
    - This step is optional and is only needed if you plan on using the custom django command(s).
 
 ###########################
