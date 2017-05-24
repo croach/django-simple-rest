@@ -42,7 +42,7 @@ class Resource(View):
         # occurred.
         try:
             response = super(Resource, self).dispatch(request, *args, **kwargs)
-        except HttpError, e:
+        except HttpError as e:
             response = HttpResponse(status=e.status)
 
         return response
